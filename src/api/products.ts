@@ -1,8 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
 
-/**
- * Fetch all active products
- */
+/* ---------------------------------------------------
+   GET ALL PRODUCTS
+--------------------------------------------------- */
 export async function getAllProducts() {
   const { data, error } = await supabase
     .from("products")
@@ -10,74 +10,84 @@ export async function getAllProducts() {
       `
       id,
       name,
-      slug,
       base_price,
       sale_price,
+      slug,
       description,
-      is_active,
-      is_featured,
+      category_id,
       product_images (
-        id,
-        image_url,
+        url:image_url,
         is_primary
       )
     `,
     )
-    .eq("is_active", true)
-    .order("created_at", { ascending: false });
+    .eq("is_active", true);
 
   if (error) throw error;
-  return data || [];
+  return data;
 }
 
-/**
- * Fetch product details by product ID
- */
-export async function getProductById(productId: string) {
+/* ---------------------------------------------------
+   GET FEATURED PRODUCTS
+--------------------------------------------------- */
+export async function getFeaturedProducts() {
   const { data, error } = await supabase
     .from("products")
     .select(
       `
       id,
       name,
-      slug,
       base_price,
       sale_price,
-      description,
-      category_id,
+      slug,
       product_images (
-        id,
-        image_url,
+        url:image_url,
         is_primary
-      ),
-      product_variants (
-        id,
-        size,
-        color,
-        sku,
-        stock_quantity,
-        price_adjustment
       )
     `,
     )
-    .eq("id", productId)
+    .eq("is_featured", true)
+    .eq("is_active", true);
+
+  if (error) throw error;
+  return data;
+}
+
+/* ---------------------------------------------------
+   GET PRODUCT BY SLUG
+--------------------------------------------------- */
+export async function getProductBySlug(slug: string) {
+  const { data, error } = await supabase
+    .from("products")
+    .select(
+      `
+      id,
+      name,
+      description,
+      base_price,
+      sale_price,
+      slug,
+      product_images (
+        url:image_url,
+        is_primary
+      ),
+      product_variants(*)
+    `,
+    )
+    .eq("slug", slug)
     .single();
 
   if (error) throw error;
   return data;
 }
 
-/**
- * Fetch products based on category (slug)
- */
-export async function getProductsByCategory(categorySlug: string) {
-  const { data: category, error: categoryErr } = await supabase
-    .from("categories")
-    .select("id")
-    .eq("slug", categorySlug)
-    .single();
+/* ---------------------------------------------------
+   GET PRODUCTS BY CATEGORY SLUG
+--------------------------------------------------- */
+export async function getProductsByCategorySlug(slug: string) {
+  const { data: category } = await supabase.from("categories").select("id").eq("slug", slug).single();
 
-  if (categoryErr) throw categoryErr;
+  if (!category) return [];
 
   const { data, error } = await supabase
     .from("products")
@@ -85,45 +95,28 @@ export async function getProductsByCategory(categorySlug: string) {
       `
       id,
       name,
-      slug,
       base_price,
       sale_price,
-      description,
+      slug,
       product_images (
-        id,
-        image_url,
+        url:image_url,
         is_primary
       )
     `,
     )
     .eq("category_id", category.id)
-    .eq("is_active", true)
-    .order("created_at", { ascending: false });
+    .eq("is_active", true);
 
   if (error) throw error;
-  return data || [];
+  return data;
 }
 
-/**
- * ✅ FIX: Fetch categories (required by Home.tsx)
- */
+/* ---------------------------------------------------
+   GET CATEGORIES
+--------------------------------------------------- */
 export async function getCategories() {
-  const { data, error } = await supabase
-    .from("categories")
-    .select(
-      `
-      id,
-      name,
-      slug,
-      image_url,
-      description,
-      sort_order,
-      is_active
-    `,
-    )
-    .eq("is_active", true)
-    .order("sort_order", { ascending: true });
+  const { data, error } = await supabase.from("categories").select("id, name, slug, image_url").eq("is_active", true);
 
   if (error) throw error;
-  return data || [];
+  return data;
 }

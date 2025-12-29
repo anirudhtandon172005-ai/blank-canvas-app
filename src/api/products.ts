@@ -1,183 +1,108 @@
 import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 
-export async function getProducts(limit?: number) {
-  let query = supabase
-    .from("products")
-    .select(`
-      *,
-      category:categories(*),
-      images:product_images(*),
-      variants:product_variants(*)
-    `)
-    .eq("is_active", true)
-    .order("created_at", { ascending: false });
+export type FormattedProduct = {
+  id: string;
+  name: string;
+  description: string | null;
+  finalPrice: number;
+  basePrice: number;
+  salePrice: number | null;
+  images: { id: string; url: string; alt: string | null }[];
+  variants: {
+    id: string;
+    size: string;
+    color: string;
+    priceAdjustment: number;
+    stock: number;
+  }[];
+  inStock: boolean;
+};
 
-  if (limit) {
-    query = query.limit(limit);
-  }
+function formatProduct(
+  product: Tables<"products">,
+  images: Tables<"product_images">[],
+  variants: Tables<"product_variants">[],
+): FormattedProduct {
+  const basePrice = product.base_price;
+  const salePrice = product.sale_price ?? product.base_price;
+  const finalPrice = salePrice;
 
-  const { data, error } = await query;
-  if (error) throw error;
-  return data;
-}
+  const formattedImages = images.map((img) => ({
+    id: img.id,
+    url: img.image_url,
+    alt: img.alt_text,
+  }));
 
-export async function getFeaturedProducts() {
-  const { data, error } = await supabase
-    .from("products")
-    .select(`
-      *,
-      category:categories(*),
-      images:product_images(*),
-      variants:product_variants(*)
-    `)
-    .eq("is_active", true)
-    .eq("is_featured", true)
-    .order("created_at", { ascending: false })
-    .limit(8);
+  const formattedVariants = variants.map((v) => ({
+    id: v.id,
+    size: v.size,
+    color: v.color,
+    priceAdjustment: v.price_adjustment ?? 0,
+    stock: v.stock_quantity,
+  }));
 
-  if (error) throw error;
-  return data;
+  const totalStock = formattedVariants.reduce((s, v) => s + (v.stock ?? 0), 0);
+
+  return {
+    id: product.id,
+    name: product.name,
+    description: product.description,
+    finalPrice,
+    basePrice,
+    salePrice,
+    images: formattedImages,
+    variants: formattedVariants,
+    inStock: totalStock > 0,
+  };
 }
 
 export async function getProductById(productId: string) {
-  const { data, error } = await supabase
-    .from("products")
-    .select(`
-      *,
-      category:categories(*),
-      images:product_images(*),
-      variants:product_variants(*)
-    `)
-    .eq("id", productId)
-    .maybeSingle();
+  const { data: product } = await supabase.from("products").select("*").eq("id", productId).maybeSingle();
 
-  if (error) throw error;
-  return data;
-}
+  if (!product) return null;
 
-export async function getProductBySlug(slug: string) {
-  const { data, error } = await supabase
-    .from("products")
-    .select(`
-      *,
-      category:categories(*),
-      images:product_images(*),
-      variants:product_variants(*)
-    `)
-    .eq("slug", slug)
-    .maybeSingle();
-
-  if (error) throw error;
-  return data;
-}
-
-export async function getProductImages(productId: string) {
-  const { data, error } = await supabase
+  const { data: images } = await supabase
     .from("product_images")
     .select("*")
-    .eq("product_id", productId)
+    .eq("product_id", product.id)
     .order("sort_order", { ascending: true });
 
-  if (error) throw error;
-  return data;
-}
-
-export async function getProductVariants(productId: string) {
-  const { data, error } = await supabase
+  const { data: variants } = await supabase
     .from("product_variants")
     .select("*")
-    .eq("product_id", productId)
+    .eq("product_id", product.id)
     .eq("is_active", true);
 
-  if (error) throw error;
-  return data;
+  return formatProduct(product, images || [], variants || []);
 }
 
-export async function getCategoryProducts(categoryId: string, limit?: number) {
-  let query = supabase
-    .from("products")
-    .select(`
-      *,
-      category:categories(*),
-      images:product_images(*),
-      variants:product_variants(*)
-    `)
-    .eq("category_id", categoryId)
-    .eq("is_active", true)
-    .order("created_at", { ascending: false });
+export async function getAllProducts() {
+  const { data: products } = await supabase.from("products").select("*").eq("is_active", true);
 
-  if (limit) {
-    query = query.limit(limit);
-  }
+  if (!products) return [];
 
-  const { data, error } = await query;
-  if (error) throw error;
-  return data;
-}
+  const ids = products.map((p) => p.id);
 
-export async function getProductsByCategorySlug(categorySlug: string) {
-  // First get the category
-  const { data: category, error: categoryError } = await supabase
-    .from("categories")
-    .select("id")
-    .eq("slug", categorySlug)
-    .maybeSingle();
+  const { data: images } = await supabase.from("product_images").select("*").in("product_id", ids);
 
-  if (categoryError) throw categoryError;
-  if (!category) return [];
-
-  const { data, error } = await supabase
-    .from("products")
-    .select(`
-      *,
-      category:categories(*),
-      images:product_images(*),
-      variants:product_variants(*)
-    `)
-    .eq("category_id", category.id)
-    .eq("is_active", true)
-    .order("created_at", { ascending: false });
-
-  if (error) throw error;
-  return data;
-}
-
-export async function getCategories() {
-  const { data, error } = await supabase
-    .from("categories")
+  const { data: variants } = await supabase
+    .from("product_variants")
     .select("*")
-    .eq("is_active", true)
-    .order("sort_order", { ascending: true });
+    .in("product_id", ids)
+    .eq("is_active", true);
 
-  if (error) throw error;
-  return data;
-}
+  const imageMap: Record<string, Tables<"product_images">[]> = {};
+  images?.forEach((img) => {
+    if (!imageMap[img.product_id]) imageMap[img.product_id] = [];
+    imageMap[img.product_id].push(img);
+  });
 
-export async function getCategoryBySlug(slug: string) {
-  const { data, error } = await supabase
-    .from("categories")
-    .select("*")
-    .eq("slug", slug)
-    .maybeSingle();
+  const variantMap: Record<string, Tables<"product_variants">[]> = {};
+  variants?.forEach((v) => {
+    if (!variantMap[v.product_id]) variantMap[v.product_id] = [];
+    variantMap[v.product_id].push(v);
+  });
 
-  if (error) throw error;
-  return data;
-}
-
-export async function searchProducts(query: string) {
-  const { data, error } = await supabase
-    .from("products")
-    .select(`
-      *,
-      category:categories(*),
-      images:product_images(*),
-      variants:product_variants(*)
-    `)
-    .eq("is_active", true)
-    .or(`name.ilike.%${query}%,description.ilike.%${query}%`)
-    .order("created_at", { ascending: false })
-    .limit(20);
-
-  if (error) throw error;
-  return data;
+  return products.map((p) => formatProduct(p, imageMap[p.id] || [], variantMap[p.id] || []));
 }

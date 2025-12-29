@@ -13,25 +13,25 @@ interface PlaceOrderData {
 }
 
 export async function placeOrder(orderData: PlaceOrderData) {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) throw new Error("User must be logged in");
 
   // Get cart items
-  const { data: cart } = await supabase
-    .from("carts")
-    .select("id")
-    .eq("user_id", user.id)
-    .maybeSingle();
+  const { data: cart } = await supabase.from("carts").select("id").eq("user_id", user.id).maybeSingle();
 
   if (!cart) throw new Error("Cart not found");
 
   const { data: cartItems, error: cartError } = await supabase
     .from("cart_items")
-    .select(`
+    .select(
+      `
       *,
       product:products(*),
       variant:product_variants(*)
-    `)
+    `,
+    )
     .eq("cart_id", cart.id);
 
   if (cartError) throw cartError;
@@ -88,34 +88,35 @@ export async function placeOrder(orderData: PlaceOrderData) {
     variant_color: item.variant?.color || "",
     quantity: item.quantity,
     unit_price: (item.product?.sale_price || item.product?.base_price || 0) + (item.variant?.price_adjustment || 0),
-    total_price: ((item.product?.sale_price || item.product?.base_price || 0) + (item.variant?.price_adjustment || 0)) * item.quantity,
+    total_price:
+      ((item.product?.sale_price || item.product?.base_price || 0) + (item.variant?.price_adjustment || 0)) *
+      item.quantity,
   }));
 
-  const { error: itemsError } = await supabase
-    .from("order_items")
-    .insert(orderItems);
+  const { error: itemsError } = await supabase.from("order_items").insert(orderItems);
 
   if (itemsError) throw itemsError;
 
   // Clear cart
-  await supabase
-    .from("cart_items")
-    .delete()
-    .eq("cart_id", cart.id);
+  await supabase.from("cart_items").delete().eq("cart_id", cart.id);
 
   return order;
 }
 
 export async function getOrders() {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return [];
 
   const { data, error } = await supabase
     .from("orders")
-    .select(`
+    .select(
+      `
       *,
       items:order_items(*)
-    `)
+    `,
+    )
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
@@ -124,18 +125,22 @@ export async function getOrders() {
 }
 
 export async function getOrderDetails(orderId: string) {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) throw new Error("User must be logged in");
 
   const { data, error } = await supabase
     .from("orders")
-    .select(`
+    .select(
+      `
       *,
       items:order_items(
         *,
         product:products(*, images:product_images(*))
       )
-    `)
+    `,
+    )
     .eq("id", orderId)
     .eq("user_id", user.id)
     .maybeSingle();
@@ -145,18 +150,22 @@ export async function getOrderDetails(orderId: string) {
 }
 
 export async function getOrderByNumber(orderNumber: string) {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) throw new Error("User must be logged in");
 
   const { data, error } = await supabase
     .from("orders")
-    .select(`
+    .select(
+      `
       *,
       items:order_items(
         *,
         product:products(*, images:product_images(*))
       )
-    `)
+    `,
+    )
     .eq("order_number", orderNumber)
     .eq("user_id", user.id)
     .maybeSingle();

@@ -1,121 +1,62 @@
 import { supabase } from "@/integrations/supabase/client";
 
-/* ---------------------------------------------------
-   GET ALL PRODUCTS
---------------------------------------------------- */
+// ✅ Get ALL products
 export async function getAllProducts() {
   const { data, error } = await supabase
     .from("products")
-    .select(
-      `
-      id,
-      name,
-      base_price,
-      sale_price,
-      slug,
-      description,
-      category_id,
-      product_images (
-        url:image_url,
-        is_primary
-      )
-    `,
-    )
-    .eq("is_active", true);
+    .select("*, product_images(image_url, is_primary), product_variants(*)")
+    .order("created_at", { ascending: false });
 
   if (error) throw error;
   return data;
 }
 
-/* ---------------------------------------------------
-   GET FEATURED PRODUCTS
---------------------------------------------------- */
-export async function getFeaturedProducts() {
+// ✅ Get single product by ID
+export async function getProductById(productId: string) {
   const { data, error } = await supabase
     .from("products")
-    .select(
-      `
-      id,
-      name,
-      base_price,
-      sale_price,
-      slug,
-      product_images (
-        url:image_url,
-        is_primary
-      )
-    `,
-    )
-    .eq("is_featured", true)
-    .eq("is_active", true);
-
-  if (error) throw error;
-  return data;
-}
-
-/* ---------------------------------------------------
-   GET PRODUCT BY SLUG
---------------------------------------------------- */
-export async function getProductBySlug(slug: string) {
-  const { data, error } = await supabase
-    .from("products")
-    .select(
-      `
-      id,
-      name,
-      description,
-      base_price,
-      sale_price,
-      slug,
-      product_images (
-        url:image_url,
-        is_primary
-      ),
-      product_variants(*)
-    `,
-    )
-    .eq("slug", slug)
+    .select("*, product_images(*), product_variants(*)")
+    .eq("id", productId)
     .single();
 
   if (error) throw error;
   return data;
 }
 
-/* ---------------------------------------------------
-   GET PRODUCTS BY CATEGORY SLUG
---------------------------------------------------- */
-export async function getProductsByCategorySlug(slug: string) {
-  const { data: category } = await supabase.from("categories").select("id").eq("slug", slug).single();
-
-  if (!category) return [];
-
+// ✅ Get products for a category ID
+export async function getProductsByCategory(categoryId: string) {
   const { data, error } = await supabase
     .from("products")
-    .select(
-      `
-      id,
-      name,
-      base_price,
-      sale_price,
-      slug,
-      product_images (
-        url:image_url,
-        is_primary
-      )
-    `,
-    )
-    .eq("category_id", category.id)
-    .eq("is_active", true);
+    .select("*, product_images(image_url, is_primary)")
+    .eq("category_id", categoryId);
 
   if (error) throw error;
   return data;
 }
 
-/* ---------------------------------------------------
-   GET CATEGORIES
---------------------------------------------------- */
-export async function getCategories() {
-  const { data, error } = await supabase.from("categories").select("id, name, slug, image_url").eq("is_active", true);
+// ✅ Get products using category slug
+export async function getProductsByCategorySlug(slug: string) {
+  const { data: category } = await supabase.from("categories").select("id").eq("slug", slug).single();
+
+  if (!category) return [];
+
+  return getProductsByCategory(category.id);
+}
+
+// ✅ Get category by slug
+export async function getCategoryBySlug(slug: string) {
+  const { data, error } = await supabase.from("categories").select("*").eq("slug", slug).single();
+
+  if (error) throw error;
+  return data;
+}
+
+// ✅ Featured products (Home Page)
+export async function getFeaturedProducts() {
+  const { data, error } = await supabase
+    .from("products")
+    .select("*, product_images(image_url, is_primary)")
+    .eq("is_featured", true);
 
   if (error) throw error;
   return data;

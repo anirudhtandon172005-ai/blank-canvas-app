@@ -1,50 +1,71 @@
 import { supabase } from "@/integrations/supabase/client";
 
-// Get orders eligible for return (delivered within last 15 days)
+// -----------------------------------------------------
+// GET RETURNABLE ORDERS (Delivered within last 15 days)
+// -----------------------------------------------------
 export async function getReturnableOrders(userId: string) {
-  const fifteenDaysAgo = new Date();
-  fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - 15);
 
   const { data, error } = await supabase
     .from("orders")
-    .select("*, order_items(*, products(*, product_images(*)))")
+    .select(
+      `
+      *,
+      items:order_items(
+        *,
+        product:products(
+          *,
+          product_images(*)
+        )
+      )
+    `,
+    )
     .eq("user_id", userId)
     .eq("status", "delivered")
-    .gte("updated_at", fifteenDaysAgo.toISOString())
+    .gte("updated_at", cutoff.toISOString())
     .order("created_at", { ascending: false });
 
   if (error) throw error;
-  
-  return (data || []).map((order) => ({
+
+  return (data || []).map((order: any) => ({
     ...order,
-    items: order.order_items?.map((item: any) => ({
+    items: order.items?.map((item: any) => ({
       ...item,
-      product: item.products,
+      product: {
+        ...item.product,
+        images: item.product?.product_images || [],
+      },
     })),
   }));
 }
 
-// Submit return request
+// -----------------------------------------------------
+// SUBMIT RETURN REQUEST (Mock Implementation)
+// -----------------------------------------------------
 export async function submitReturnRequest(request: {
   orderId: string;
   reason: string;
   comments?: string;
   refundMethod: "original" | "store_credit";
 }) {
-  // For now, just return a mock response
-  // In production, you'd create a returns table and insert the request
   return {
     status: "submitted",
     orderId: request.orderId,
     reason: request.reason,
+    comments: request.comments || null,
     refundMethod: request.refundMethod,
+    timestamp: new Date().toISOString(),
   };
 }
 
-// Get return status
+// -----------------------------------------------------
+// GET RETURN STATUS (Mock Implementation)
+// -----------------------------------------------------
 export async function getReturnStatus(orderId: string) {
   return {
     orderId,
     status: "processing",
+    updated_at: new Date().toISOString(),
   };
 }

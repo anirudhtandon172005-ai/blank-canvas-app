@@ -15,6 +15,9 @@ import Profile from "./pages/Profile";
 import Orders from "./pages/Orders";
 import OrderDetails from "./pages/OrderDetails";
 import Returns from "./pages/Returns";
+import AddressList from "./pages/addresses/AddressList";
+import CreateAddress from "./pages/addresses/CreateAddress";
+import EditAddress from "./pages/addresses/EditAddress";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -35,6 +38,9 @@ const App = () => (
           <Route path="/signup" element={<Signup />} />
           <Route path="/wishlist" element={<Wishlist />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/profile/addresses" element={<AddressList />} />
+          <Route path="/profile/addresses/new" element={<CreateAddress />} />
+          <Route path="/profile/addresses/:id" element={<EditAddress />} />
           <Route path="/orders" element={<Orders />} />
           <Route path="/order/:orderId" element={<OrderDetails />} />
           <Route path="/returns" element={<Returns />} />

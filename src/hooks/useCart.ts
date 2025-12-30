@@ -31,7 +31,7 @@ export function useCart() {
     }
 
     try {
-      const data = await getCart();
+      const data = await getCart(user.id);
       setCart(data);
     } catch (error) {
       console.error("Error fetching cart:", error);
@@ -57,7 +57,7 @@ export function useCart() {
     }
 
     try {
-      await addToCart(productId, variantId, quantity);
+      await addToCart(user.id, productId, variantId, quantity);
       await fetchCart();
       toast({
         title: "Added to cart",
@@ -103,8 +103,10 @@ export function useCart() {
   };
 
   const emptyCart = async () => {
+    if (!user) return;
+    
     try {
-      await clearCart();
+      await clearCart(user.id);
       await fetchCart();
     } catch (error: any) {
       console.error("Error clearing cart:", error);

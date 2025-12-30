@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "./useAuth";
-import { getWishlist, addToWishlist, removeFromWishlist, isInWishlist } from "@/api/wishlist";
+import { getWishlist, addToWishlist, removeFromWishlist } from "@/api/wishlist";
 import { toast } from "@/hooks/use-toast";
 
 export function useWishlist() {
@@ -18,7 +18,7 @@ export function useWishlist() {
     }
 
     try {
-      const data = await getWishlist();
+      const data = await getWishlist(user.id);
       setWishlist(data);
       setWishlistIds(new Set(data.map((item: any) => item.product_id)));
     } catch (error) {
@@ -45,7 +45,7 @@ export function useWishlist() {
     }
 
     try {
-      await addToWishlist(productId);
+      await addToWishlist(user.id, productId);
       await fetchWishlist();
       toast({
         title: "Added to wishlist",
@@ -61,8 +61,10 @@ export function useWishlist() {
   };
 
   const removeItem = async (productId: string) => {
+    if (!user) return;
+    
     try {
-      await removeFromWishlist(productId);
+      await removeFromWishlist(user.id, productId);
       await fetchWishlist();
       toast({
         title: "Removed",

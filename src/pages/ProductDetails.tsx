@@ -7,7 +7,7 @@ import Footer from "@/components/Footer";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import ProductCard from "@/components/ProductCard";
 import Loader from "@/components/Loader";
-import { getProductBySlug, getProducts } from "@/api/products";
+import { getProductBySlug, getAllProducts } from "@/api/products";
 import { useCart } from "@/hooks/useCart";
 import { useWishlist } from "@/hooks/useWishlist";
 import { useAuth } from "@/hooks/useAuth";
@@ -48,7 +48,7 @@ export default function ProductDetails() {
         }
 
         // Fetch related products
-        const allProducts = await getProducts(8);
+        const allProducts = await getAllProducts(8);
         setRelatedProducts((allProducts || []).filter((p: any) => p.id !== data?.id).slice(0, 4));
       } catch (error) {
         console.error("Error fetching product:", error);

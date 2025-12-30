@@ -1,11 +1,14 @@
+//import { useState, useEffect } from "react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { MapPin, Plus, Check, CreditCard, Banknote, Truck, ShieldCheck } from "lucide-react";
+
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import Loader from "@/components/Loader";
+
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";
 import { getAddresses, addAddress } from "@/api/addresses";
@@ -27,8 +30,8 @@ interface Address {
 
 export default function Checkout() {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const { cart, loading: cartLoading, cartTotal, emptyCart } = useCart();
+  const { user, loading: authLoading } = useAuth();
+  const { cart, loading: cartLoading, cartTotal } = useCart();
 
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
@@ -37,7 +40,6 @@ export default function Checkout() {
   const [loading, setLoading] = useState(true);
   const [placing, setPlacing] = useState(false);
 
-  // New address form
   const [newAddress, setNewAddress] = useState({
     full_name: "",
     phone: "",
@@ -49,7 +51,10 @@ export default function Checkout() {
     label: "",
   });
 
+  // ✅ FIXED AUTH CHECK
   useEffect(() => {
+    if (authLoading) return; // WAIT UNTIL SUPABASE FINISHES CHECKING SESSION
+
     if (!user) {
       navigate("/login");
       return;
@@ -59,7 +64,7 @@ export default function Checkout() {
       try {
         const data = await getAddresses(user.id);
         setAddresses(data);
-        const defaultAddr = data.find((a: Address) => a.is_default) || data[0];
+        const defaultAddr = data.find((a) => a.is_default) || data[0];
         setSelectedAddress(defaultAddr || null);
       } catch (error) {
         console.error("Error fetching addresses:", error);
@@ -67,8 +72,9 @@ export default function Checkout() {
         setLoading(false);
       }
     }
+
     fetchAddresses();
-  }, [user, navigate]);
+  }, [user, authLoading, navigate]);
 
   const cartItems = cart?.items || [];
   const shippingCost = cartTotal >= 2000 ? 0 : 99;
@@ -77,9 +83,15 @@ export default function Checkout() {
 
   const handleAddAddress = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!newAddress.full_name || !newAddress.phone || !newAddress.address_line1 || 
-        !newAddress.city || !newAddress.state || !newAddress.postal_code) {
+
+    if (
+      !newAddress.full_name ||
+      !newAddress.phone ||
+      !newAddress.address_line1 ||
+      !newAddress.city ||
+      !newAddress.state ||
+      !newAddress.postal_code
+    ) {
       toast({
         title: "Error",
         description: "Please fill in all required fields",
@@ -91,12 +103,14 @@ export default function Checkout() {
     try {
       const address = await addAddress({
         ...newAddress,
-        user_id: user.id,
+        user_id: user!.id,
         is_default: addresses.length === 0,
       });
+
       setAddresses([...addresses, address]);
       setSelectedAddress(address);
       setShowAddAddress(false);
+
       setNewAddress({
         full_name: "",
         phone: "",
@@ -107,6 +121,7 @@ export default function Checkout() {
         postal_code: "",
         label: "",
       });
+
       toast({
         title: "Address added",
         description: "Your address has been saved",
@@ -131,6 +146,7 @@ export default function Checkout() {
     }
 
     setPlacing(true);
+
     try {
       const order = await placeOrder({
         addressId: selectedAddress.id,
@@ -146,6 +162,7 @@ export default function Checkout() {
         title: "Order placed!",
         description: `Your order #${order.order_number} has been confirmed`,
       });
+
       navigate(`/orders/${order.id}`);
     } catch (error: any) {
       toast({
@@ -158,7 +175,8 @@ export default function Checkout() {
     }
   };
 
-  if (!user || cartLoading || loading) {
+  // Loading states
+  if (authLoading || cartLoading || loading) {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
@@ -178,27 +196,26 @@ export default function Checkout() {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      
+
       <main className="flex-1">
         <div className="container-main pb-16">
-          <Breadcrumbs items={[
-            { label: "Home", href: "/" },
-            { label: "Cart", href: "/cart" },
-            { label: "Checkout" },
-          ]} />
+          <Breadcrumbs
+            items={[{ label: "Home", href: "/" }, { label: "Cart", href: "/cart" }, { label: "Checkout" }]}
+          />
 
           <h1 className="section-title text-3xl mb-8">Checkout</h1>
 
           <div className="grid lg:grid-cols-3 gap-8">
-            {/* Left Column */}
+            {/* LEFT SIDE */}
             <div className="lg:col-span-2 space-y-8">
-              {/* Delivery Address */}
+              {/* ADDRESS SECTION */}
               <section className="border border-border rounded-xl p-6">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="font-heading text-xl font-semibold flex items-center gap-2">
                     <MapPin className="w-5 h-5 text-primary" />
                     Delivery Address
                   </h2>
+
                   <button
                     onClick={() => setShowAddAddress(true)}
                     className="flex items-center gap-1 text-sm text-primary hover:underline"
@@ -208,18 +225,8 @@ export default function Checkout() {
                   </button>
                 </div>
 
-                {addresses.length === 0 && !showAddAddress ? (
-                  <div className="text-center py-8">
-                    <MapPin className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-                    <p className="text-muted-foreground mb-4">No saved addresses</p>
-                    <button
-                      onClick={() => setShowAddAddress(true)}
-                      className="btn-primary"
-                    >
-                      Add Address
-                    </button>
-                  </div>
-                ) : (
+                {/* Address List */}
+                {addresses.length > 0 ? (
                   <div className="space-y-3">
                     {addresses.map((address) => (
                       <motion.div
@@ -235,14 +242,7 @@ export default function Checkout() {
                       >
                         <div className="flex items-start justify-between">
                           <div>
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="font-medium">{address.full_name}</span>
-                              {address.label && (
-                                <span className="text-xs px-2 py-0.5 bg-secondary rounded-full">
-                                  {address.label}
-                                </span>
-                              )}
-                            </div>
+                            <p className="font-medium">{address.full_name}</p>
                             <p className="text-sm text-muted-foreground">
                               {address.address_line1}
                               {address.address_line2 && `, ${address.address_line2}`}
@@ -250,10 +250,9 @@ export default function Checkout() {
                             <p className="text-sm text-muted-foreground">
                               {address.city}, {address.state} - {address.postal_code}
                             </p>
-                            <p className="text-sm text-muted-foreground mt-1">
-                              Phone: {address.phone}
-                            </p>
+                            <p className="text-sm text-muted-foreground mt-1">Phone: {address.phone}</p>
                           </div>
+
                           {selectedAddress?.id === address.id && (
                             <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
                               <Check className="w-4 h-4 text-primary-foreground" />
@@ -263,145 +262,99 @@ export default function Checkout() {
                       </motion.div>
                     ))}
                   </div>
+                ) : (
+                  <p>No saved addresses</p>
                 )}
 
                 {/* Add Address Form */}
                 {showAddAddress && (
                   <motion.form
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
                     onSubmit={handleAddAddress}
                     className="mt-6 p-4 bg-secondary/30 rounded-xl space-y-4"
                   >
+                    {/* FORM FIELDS */}
                     <div className="grid md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium mb-1">Full Name *</label>
-                        <input
-                          type="text"
-                          value={newAddress.full_name}
-                          onChange={(e) => setNewAddress({ ...newAddress, full_name: e.target.value })}
-                          className="input-field"
-                          placeholder="John Doe"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-1">Phone *</label>
-                        <input
-                          type="tel"
-                          value={newAddress.phone}
-                          onChange={(e) => setNewAddress({ ...newAddress, phone: e.target.value })}
-                          className="input-field"
-                          placeholder="+91 98765 43210"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Address Line 1 *</label>
                       <input
                         type="text"
-                        value={newAddress.address_line1}
-                        onChange={(e) => setNewAddress({ ...newAddress, address_line1: e.target.value })}
+                        placeholder="Full Name"
                         className="input-field"
-                        placeholder="House/Flat No, Building Name"
+                        value={newAddress.full_name}
+                        onChange={(e) => setNewAddress({ ...newAddress, full_name: e.target.value })}
                       />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Address Line 2</label>
                       <input
                         type="text"
-                        value={newAddress.address_line2}
-                        onChange={(e) => setNewAddress({ ...newAddress, address_line2: e.target.value })}
+                        placeholder="Phone"
                         className="input-field"
-                        placeholder="Street, Locality"
+                        value={newAddress.phone}
+                        onChange={(e) => setNewAddress({ ...newAddress, phone: e.target.value })}
                       />
                     </div>
+
+                    <input
+                      type="text"
+                      placeholder="Address Line 1"
+                      className="input-field"
+                      value={newAddress.address_line1}
+                      onChange={(e) => setNewAddress({ ...newAddress, address_line1: e.target.value })}
+                    />
+
+                    <input
+                      type="text"
+                      placeholder="Address Line 2"
+                      className="input-field"
+                      value={newAddress.address_line2}
+                      onChange={(e) => setNewAddress({ ...newAddress, address_line2: e.target.value })}
+                    />
+
                     <div className="grid md:grid-cols-3 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium mb-1">City *</label>
-                        <input
-                          type="text"
-                          value={newAddress.city}
-                          onChange={(e) => setNewAddress({ ...newAddress, city: e.target.value })}
-                          className="input-field"
-                          placeholder="Mumbai"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-1">State *</label>
-                        <input
-                          type="text"
-                          value={newAddress.state}
-                          onChange={(e) => setNewAddress({ ...newAddress, state: e.target.value })}
-                          className="input-field"
-                          placeholder="Maharashtra"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-1">PIN Code *</label>
-                        <input
-                          type="text"
-                          value={newAddress.postal_code}
-                          onChange={(e) => setNewAddress({ ...newAddress, postal_code: e.target.value })}
-                          className="input-field"
-                          placeholder="400001"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Label (Optional)</label>
                       <input
                         type="text"
-                        value={newAddress.label}
-                        onChange={(e) => setNewAddress({ ...newAddress, label: e.target.value })}
+                        placeholder="City"
                         className="input-field"
-                        placeholder="Home, Office, etc."
+                        value={newAddress.city}
+                        onChange={(e) => setNewAddress({ ...newAddress, city: e.target.value })}
+                      />
+                      <input
+                        type="text"
+                        placeholder="State"
+                        className="input-field"
+                        value={newAddress.state}
+                        onChange={(e) => setNewAddress({ ...newAddress, state: e.target.value })}
+                      />
+                      <input
+                        type="text"
+                        placeholder="PIN Code"
+                        className="input-field"
+                        value={newAddress.postal_code}
+                        onChange={(e) => setNewAddress({ ...newAddress, postal_code: e.target.value })}
                       />
                     </div>
-                    <div className="flex gap-3">
-                      <button type="submit" className="btn-primary">
-                        Save Address
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setShowAddAddress(false)}
-                        className="btn-subtle"
-                      >
-                        Cancel
-                      </button>
-                    </div>
+
+                    <button className="btn-primary" type="submit">
+                      Save Address
+                    </button>
                   </motion.form>
                 )}
               </section>
 
-              {/* Payment Method */}
+              {/* PAYMENT METHOD */}
               <section className="border border-border rounded-xl p-6">
-                <h2 className="font-heading text-xl font-semibold flex items-center gap-2 mb-6">
-                  <CreditCard className="w-5 h-5 text-primary" />
-                  Payment Method
+                <h2 className="font-heading text-xl font-semibold mb-6">
+                  <CreditCard className="w-5 h-5 text-primary" /> Payment Method
                 </h2>
 
                 <div className="space-y-3">
                   <div
                     onClick={() => setPaymentMethod("cod")}
                     className={`p-4 rounded-xl border-2 cursor-pointer transition-colors ${
-                      paymentMethod === "cod"
-                        ? "border-primary bg-primary/5"
-                        : "border-border hover:border-primary/50"
+                      paymentMethod === "cod" ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                        paymentMethod === "cod" ? "border-primary" : "border-muted-foreground"
-                      }`}>
-                        {paymentMethod === "cod" && (
-                          <div className="w-3 h-3 rounded-full bg-primary" />
-                        )}
-                      </div>
                       <Banknote className="w-5 h-5 text-muted-foreground" />
-                      <div>
-                        <p className="font-medium">Cash on Delivery</p>
-                        <p className="text-sm text-muted-foreground">Pay when you receive</p>
-                      </div>
+                      <p className="font-medium">Cash on Delivery</p>
                     </div>
                   </div>
 
@@ -414,39 +367,27 @@ export default function Checkout() {
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                        paymentMethod === "online" ? "border-primary" : "border-muted-foreground"
-                      }`}>
-                        {paymentMethod === "online" && (
-                          <div className="w-3 h-3 rounded-full bg-primary" />
-                        )}
-                      </div>
                       <CreditCard className="w-5 h-5 text-muted-foreground" />
-                      <div>
-                        <p className="font-medium">Online Payment</p>
-                        <p className="text-sm text-muted-foreground">UPI, Cards, Net Banking</p>
-                      </div>
+                      <p className="font-medium">Online Payment</p>
                     </div>
                   </div>
                 </div>
               </section>
             </div>
 
-            {/* Order Summary */}
+            {/* ORDER SUMMARY */}
             <div className="lg:col-span-1">
               <div className="border border-border rounded-xl p-6 sticky top-24">
                 <h2 className="font-heading text-xl font-semibold mb-6">Order Summary</h2>
 
-                {/* Items Preview */}
                 <div className="space-y-3 mb-6 max-h-48 overflow-y-auto">
-                  {cartItems.map((item: any) => {
+                  {cartItems.map((item) => {
                     const price = item.product?.sale_price || item.product?.base_price || 0;
                     return (
                       <div key={item.id} className="flex gap-3">
                         <div className="w-12 h-16 rounded bg-secondary/30 overflow-hidden shrink-0">
                           <img
                             src={item.product?.images?.[0]?.image_url || "/placeholder.svg"}
-                            alt={item.product?.name}
                             className="w-full h-full object-cover"
                           />
                         </div>
@@ -475,6 +416,7 @@ export default function Checkout() {
                     <span className="text-muted-foreground">GST (5%)</span>
                     <span>₹{taxAmount.toFixed(0)}</span>
                   </div>
+
                   <div className="border-t border-border pt-3 mt-3">
                     <div className="flex justify-between font-semibold text-lg">
                       <span>Total</span>
@@ -495,15 +437,12 @@ export default function Checkout() {
                   )}
                 </button>
 
-                {/* Trust Badges */}
                 <div className="flex items-center justify-center gap-4 mt-6 text-xs text-muted-foreground">
                   <div className="flex items-center gap-1">
-                    <Truck className="w-4 h-4" />
-                    <span>Free Delivery</span>
+                    <Truck className="w-4 h-4" /> <span>Free Delivery</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <ShieldCheck className="w-4 h-4" />
-                    <span>Secure</span>
+                    <ShieldCheck className="w-4 h-4" /> <span>Secure</span>
                   </div>
                 </div>
               </div>

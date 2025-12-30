@@ -7,7 +7,7 @@ import Footer from "@/components/Footer";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import ProductCard from "@/components/ProductCard";
 import Loader from "@/components/Loader";
-import { getProductsByCategorySlug, getCategoryBySlug, getProducts } from "@/api/products";
+import { getProductsByCategorySlug, getCategoryBySlug, getAllProducts } from "@/api/products";
 
 const COLORS = [
   { name: "Red", value: "red", hex: "#DC2626" },
@@ -53,7 +53,7 @@ export default function CategoryListing() {
           setCategory(categoryData);
           setProducts(productsData || []);
         } else {
-          const productsData = await getProducts();
+          const productsData = await getAllProducts();
           setProducts(productsData || []);
           setCategory({ name: "All Products", description: "Discover our complete collection" });
         }

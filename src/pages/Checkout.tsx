@@ -8,7 +8,7 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 import Loader from "@/components/Loader";
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";
-import { getAddresses, addAddress } from "@/api/auth";
+import { getAddresses, addAddress } from "@/api/addresses";
 import { placeOrder } from "@/api/orders";
 import { toast } from "@/hooks/use-toast";
 
@@ -57,7 +57,7 @@ export default function Checkout() {
 
     async function fetchAddresses() {
       try {
-        const data = await getAddresses();
+        const data = await getAddresses(user.id);
         setAddresses(data);
         const defaultAddr = data.find((a: Address) => a.is_default) || data[0];
         setSelectedAddress(defaultAddr || null);
@@ -91,6 +91,7 @@ export default function Checkout() {
     try {
       const address = await addAddress({
         ...newAddress,
+        user_id: user.id,
         is_default: addresses.length === 0,
       });
       setAddresses([...addresses, address]);

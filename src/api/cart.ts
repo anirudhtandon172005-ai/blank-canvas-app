@@ -1,21 +1,33 @@
 import { supabase } from "@/integrations/supabase/client";
 
-// Get cart ID for a user
-export async function getCartId(userId: string) {
-  const { data, error } = await supabase
-    .from("carts")
-    .select("id")
-    .eq("user_id", userId)
-    .maybeSingle();
+// ------------------------------
+// Ensure a cart exists
+// ------------------------------
+export async function getOrCreateCart(userId: string) {
+  const { data, error } = await supabase.from("carts").select("id").eq("user_id", userId).maybeSingle();
 
   if (error) throw error;
-  return data?.id;
+
+  // Cart exists → return it
+  if (data) return data.id;
+
+  // Create new cart
+  const { data: newCart, error: createErr } = await supabase
+    .from("carts")
+    .insert({ user_id: userId })
+    .select("id")
+    .single();
+
+  if (createErr) throw createErr;
+
+  return newCart.id;
 }
 
-// Get full cart for a user
+// ------------------------------
+// Get full cart with product + variant + images
+// ------------------------------
 export async function getCart(userId: string) {
-  const cartId = await getCartId(userId);
-  if (!cartId) return { id: "", user_id: userId, items: [] };
+  const cartId = await getOrCreateCart(userId);
 
   const { data, error } = await supabase
     .from("cart_items")
@@ -23,21 +35,45 @@ export async function getCart(userId: string) {
       `
       id,
       quantity,
-      variant_id,
       product_id,
-      product_variants(*),
-      products(*, product_images(*))
-    `
+      variant_id,
+
+      products (
+        id,
+        name,
+        slug,
+        description,
+        base_price,
+        sale_price,
+        category_id,
+        product_images (
+          id,
+          image_url,
+          is_primary,
+          sort_order
+        )
+      ),
+
+      product_variants (
+        id,
+        size,
+        color,
+        sku,
+        stock_quantity,
+        price_adjustment,
+        is_active
+      )
+    `,
     )
     .eq("cart_id", cartId);
 
   if (error) throw error;
 
-  const items = (data || []).map((item) => ({
+  const items = (data || []).map((item: any) => ({
     id: item.id,
+    quantity: item.quantity,
     product_id: item.product_id,
     variant_id: item.variant_id,
-    quantity: item.quantity,
     product: item.products,
     variant: item.product_variants,
   }));
@@ -45,12 +81,13 @@ export async function getCart(userId: string) {
   return { id: cartId, user_id: userId, items };
 }
 
-// Add to cart
+// ------------------------------
+// Add item to cart
+// ------------------------------
 export async function addToCart(userId: string, productId: string, variantId: string, quantity = 1) {
-  const cartId = await getCartId(userId);
-  if (!cartId) throw new Error("Cart not found");
+  const cartId = await getOrCreateCart(userId);
 
-  // Check if item already exists
+  // Check if already in cart
   const { data: existing } = await supabase
     .from("cart_items")
     .select("id, quantity")
@@ -59,8 +96,8 @@ export async function addToCart(userId: string, productId: string, variantId: st
     .eq("variant_id", variantId)
     .maybeSingle();
 
+  // Update quantity
   if (existing) {
-    // Update quantity
     const { data, error } = await supabase
       .from("cart_items")
       .update({ quantity: existing.quantity + quantity })
@@ -72,7 +109,7 @@ export async function addToCart(userId: string, productId: string, variantId: st
     return data;
   }
 
-  // Insert new item
+  // Insert new
   const { data, error } = await supabase
     .from("cart_items")
     .insert({
@@ -85,23 +122,23 @@ export async function addToCart(userId: string, productId: string, variantId: st
     .single();
 
   if (error) throw error;
+
   return data;
 }
 
-// Update item quantity
+// ------------------------------
+// Update quantity
+// ------------------------------
 export async function updateQuantity(cartItemId: string, quantity: number) {
-  const { data, error } = await supabase
-    .from("cart_items")
-    .update({ quantity })
-    .eq("id", cartItemId)
-    .select()
-    .single();
+  const { data, error } = await supabase.from("cart_items").update({ quantity }).eq("id", cartItemId).select().single();
 
   if (error) throw error;
   return data;
 }
 
-// Remove item
+// ------------------------------
+// Remove single item
+// ------------------------------
 export async function removeFromCart(cartItemId: string) {
   const { error } = await supabase.from("cart_items").delete().eq("id", cartItemId);
 
@@ -109,10 +146,11 @@ export async function removeFromCart(cartItemId: string) {
   return true;
 }
 
-// Clear cart
+// ------------------------------
+// Clear entire cart
+// ------------------------------
 export async function clearCart(userId: string) {
-  const cartId = await getCartId(userId);
-  if (!cartId) return true;
+  const cartId = await getOrCreateCart(userId);
 
   const { error } = await supabase.from("cart_items").delete().eq("cart_id", cartId);
 

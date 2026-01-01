@@ -1,4 +1,3 @@
-//import { useState, useEffect } from "react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -8,6 +7,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import Loader from "@/components/Loader";
+import PayPalButton, { type PayPalPaymentDetails } from "@/components/PayPalButton";
 
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";
@@ -135,15 +135,9 @@ export default function Checkout() {
     }
   };
 
-  const handlePlaceOrder = async () => {
-    if (!selectedAddress) {
-      toast({
-        title: "Select address",
-        description: "Please select a delivery address",
-        variant: "destructive",
-      });
-      return;
-    }
+  // Helper to create order and redirect
+  const createOrderAndRedirect = async (transactionId: string) => {
+    if (!selectedAddress) return;
 
     setPlacing(true);
 
@@ -163,16 +157,49 @@ export default function Checkout() {
         description: `Your order #${order.order_number} has been confirmed`,
       });
 
-      navigate(`/orders/${order.id}`);
-    } catch (error: any) {
+      // Redirect to payment success page
+      navigate(`/payment-success?orderId=${order.id}&tx=${transactionId}`);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to place order";
       toast({
         title: "Error",
-        description: error.message || "Failed to place order",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
       setPlacing(false);
     }
+  };
+
+  // Handle COD payment
+  const handleCODPayment = async () => {
+    if (!selectedAddress) {
+      toast({
+        title: "Select address",
+        description: "Please select a delivery address",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    await createOrderAndRedirect("COD");
+  };
+
+  // Handle PayPal success
+  const handlePayPalSuccess = async (paymentDetails: PayPalPaymentDetails) => {
+    if (!selectedAddress) return;
+
+    const transactionId = paymentDetails.id;
+    await createOrderAndRedirect(transactionId);
+  };
+
+  // Handle PayPal error
+  const handlePayPalError = (error: Error) => {
+    toast({
+      title: "Payment Failed",
+      description: error.message || "PayPal payment could not be completed",
+      variant: "destructive",
+    });
   };
 
   // Loading states
@@ -425,17 +452,38 @@ export default function Checkout() {
                   </div>
                 </div>
 
-                <button
-                  onClick={handlePlaceOrder}
-                  disabled={placing || !selectedAddress}
-                  className="w-full mt-6 bg-primary text-primary-foreground py-3.5 rounded-full font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  {placing ? (
-                    <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                  ) : (
-                    "Place Order"
-                  )}
-                </button>
+                {/* Payment Action Area */}
+                {paymentMethod === "cod" ? (
+                  <button
+                    onClick={handleCODPayment}
+                    disabled={placing || !selectedAddress}
+                    className="w-full mt-6 bg-primary text-primary-foreground py-3.5 rounded-full font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {placing ? (
+                      <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        <Banknote className="w-5 h-5" />
+                        Place Order (COD)
+                      </>
+                    )}
+                  </button>
+                ) : (
+                  <div className="mt-6">
+                    {placing ? (
+                      <div className="w-full py-3.5 flex items-center justify-center">
+                        <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                      </div>
+                    ) : (
+                      <PayPalButton
+                        amount={totalAmount}
+                        onSuccess={handlePayPalSuccess}
+                        onError={handlePayPalError}
+                        disabled={!selectedAddress}
+                      />
+                    )}
+                  </div>
+                )}
 
                 <div className="flex items-center justify-center gap-4 mt-6 text-xs text-muted-foreground">
                   <div className="flex items-center gap-1">

@@ -16,6 +16,7 @@ import Profile from "./pages/Profile";
 import Orders from "./pages/Orders";
 import OrderDetails from "./pages/OrderDetails";
 import Returns from "./pages/Returns";
+import SearchPage from "./pages/SearchPage";
 import AddressList from "./pages/addresses/AddressList";
 import CreateAddress from "./pages/addresses/CreateAddress";
 import EditAddress from "./pages/addresses/EditAddress";
@@ -46,6 +47,7 @@ const App = () => (
           <Route path="/orders" element={<Orders />} />
           <Route path="/order/:orderId" element={<OrderDetails />} />
           <Route path="/returns" element={<Returns />} />
+          <Route path="/search" element={<SearchPage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

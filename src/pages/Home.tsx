@@ -1,4 +1,3 @@
-//import { Link } from "react-router-dom";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
@@ -33,10 +32,8 @@ export default function Home() {
       <Navbar />
 
       <main className="flex-1">
-        {/* ---------------------------------------------------------
-            HERO SECTION (Updated with your blurred image)
-        ---------------------------------------------------------- */}
-        <section className="relative h-[70vh] overflow-hidden">
+        {/* HERO */}
+        <section className="relative h-[70vh] bg-gradient-to-br from-secondary via-background to-secondary overflow-hidden">
           <div
             className="absolute inset-0 bg-cover bg-center opacity-40 blur-sm"
             style={{
@@ -44,7 +41,8 @@ export default function Home() {
                 "url('https://nrhvufbmsjmewpqhwcmp.supabase.co/storage/v1/object/public/products/Gemini_Generated_Image_8y2jg78y2jg78y2j.png')",
             }}
           />
-          <div className="relative container-main h-full flex flex-col items-center justify-center text-center z-10">
+
+          <div className="relative container-main h-full flex flex-col items-center justify-center text-center">
             <motion.p
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -59,7 +57,8 @@ export default function Home() {
               transition={{ delay: 0.1 }}
               className="font-heading text-4xl md:text-6xl lg:text-7xl font-semibold text-foreground mb-4"
             >
-              Where Tradition Meets <br />
+              Where Tradition Meets
+              <br />
               <span className="italic text-primary">Timeless Elegance</span>
             </motion.h1>
 
@@ -80,7 +79,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Featured Products */}
+        {/* FEATURED PRODUCTS */}
         <section className="py-16">
           <div className="container-main">
             <div className="flex items-center justify-between mb-8">
@@ -107,9 +106,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ---------------------------------------------------------
-            CATEGORY SECTION (Your Saree & Lehenga images)
-        ---------------------------------------------------------- */}
+        {/* CATEGORIES */}
         <section className="py-16 bg-secondary/30">
           <div className="container-main">
             <div className="text-center mb-12">
@@ -118,11 +115,11 @@ export default function Home() {
             </div>
 
             <div className="grid md:grid-cols-2 gap-6">
-              {/* Sarees */}
+              {/* Sarees category */}
               <Link to="/category/sarees" className="group relative h-80 rounded-xl overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 to-transparent z-10" />
                 <img
-                  src="https://nrhvufbmsjmewpqhwcmp.supabase.co/storage/v1/object/public/products/ChatGPT Image Jan 2, 2026, 03_27_16 AM.png"
+                  src="https://nrhvufbmsjmewpqhwcmp.supabase.co/storage/v1/object/public/products/ChatGPT%20Image%20Jan%202,%202026,%2003_27_16%20AM.png"
                   alt="Sarees"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
@@ -132,11 +129,11 @@ export default function Home() {
                 </div>
               </Link>
 
-              {/* Lehengas */}
+              {/* Lehengas category */}
               <Link to="/category/lehengas" className="group relative h-80 rounded-xl overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 to-transparent z-10" />
                 <img
-                  src="https://nrhvufbmsjmewpqhwcmp.supabase.co/storage/v1/object/public/products/ChatGPT Image Jan 2, 2026, 03_15_37 AM.png"
+                  src="https://nrhvufbmsjmewpqhwcmp.supabase.co/storage/v1/object/public/products/ChatGPT%20Image%20Jan%202,%202026,%2003_15_37%20AM.png"
                   alt="Lehengas"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
@@ -148,24 +145,8 @@ export default function Home() {
             </div>
           </div>
         </section>
-
-        {/* Newsletter */}
-        <section className="py-16 bg-muted/50">
-          <div className="container-main text-center">
-            <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-primary text-xl">✦</span>
-            </div>
-            <h2 className="section-title mb-2">Luxury in Every Thread</h2>
-            <p className="text-muted-foreground max-w-lg mx-auto mb-8">
-              We believe in preserving the art of Indian craftsmanship. Every piece tells a story of tradition.
-            </p>
-            <div className="flex justify-center gap-2 max-w-md mx-auto">
-              <input type="email" placeholder="Enter your email for updates" className="flex-1 input-field" />
-              <button className="btn-primary">Subscribe</button>
-            </div>
-          </div>
-        </section>
       </main>
+
       <Footer />
     </div>
   );

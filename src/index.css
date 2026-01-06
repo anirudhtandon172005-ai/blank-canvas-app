@@ -173,6 +173,21 @@
   .link-underline {
     @apply relative after:content-[''] after:absolute after:w-full after:scale-x-0 after:h-0.5 after:bottom-0 after:left-0 after:bg-primary after:origin-bottom-right after:transition-transform after:duration-300 hover:after:scale-x-100 hover:after:origin-bottom-left;
   }
+  
+  /* Navigation links - ensure they're always clickable */
+  .nav-link {
+    @apply relative z-10 text-sm font-medium text-foreground/80 hover:text-foreground transition-colors cursor-pointer pointer-events-auto;
+  }
+  
+  /* Icon buttons - ensure clickability */
+  .icon-btn {
+    @apply relative z-10 p-2 rounded-full hover:bg-secondary transition-colors cursor-pointer pointer-events-auto;
+  }
+  
+  /* Cart badge */
+  .cart-badge {
+    @apply absolute -top-1 -right-1 w-5 h-5 bg-primary text-primary-foreground text-xs rounded-full flex items-center justify-center pointer-events-none;
+  }
 }
 
 @layer utilities {

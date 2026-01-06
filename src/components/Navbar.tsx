@@ -113,11 +113,11 @@ export default function Navbar() {
             </span>
           </Link>
 
-          {/* Desktop Search */}
-          <div ref={searchRef} className="hidden md:flex flex-1 max-w-md mx-8 relative z-40">
+          {/* Desktop Search - constrained width, no flex-1 to prevent overlap */}
+          <div ref={searchRef} className="hidden md:block w-full max-w-md mx-8 relative z-40">
             <form onSubmit={handleSearch} className="w-full">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                 <input
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -128,21 +128,24 @@ export default function Navbar() {
               </div>
             </form>
 
-            <AnimatePresence>
-              {isDropdownOpen && (
-                <SearchSuggestions
-                  query={debouncedQuery}
-                  results={suggestions}
-                  onSelect={handleSelect}
-                  isLoading={isLoading}
-                  recentSearches={recentSearches}
-                  onRecentSearchClick={handleRecentSearchClick}
-                  onRemoveRecentSearch={removeSearch}
-                  onClearAllRecentSearches={clearSearches}
-                  showRecent={!searchQuery.trim()}
-                />
-              )}
-            </AnimatePresence>
+            {/* Dropdown container - pointer-events managed based on open state */}
+            <div className={isDropdownOpen ? "pointer-events-auto" : "pointer-events-none"}>
+              <AnimatePresence>
+                {isDropdownOpen && (
+                  <SearchSuggestions
+                    query={debouncedQuery}
+                    results={suggestions}
+                    onSelect={handleSelect}
+                    isLoading={isLoading}
+                    recentSearches={recentSearches}
+                    onRecentSearchClick={handleRecentSearchClick}
+                    onRemoveRecentSearch={removeSearch}
+                    onClearAllRecentSearches={clearSearches}
+                    showRecent={!searchQuery.trim()}
+                  />
+                )}
+              </AnimatePresence>
+            </div>
           </div>
 
           {/* Desktop Navigation */}

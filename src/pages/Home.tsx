@@ -33,21 +33,26 @@ export default function Home() {
       <Navbar />
 
       <main className="flex-1">
-        {/* HERO */}
-        <section className="relative h-[70vh] bg-gradient-to-br from-secondary via-background to-secondary overflow-hidden">
+        {/* ================= HERO ================= */}
+        <section className="relative h-[70vh] overflow-hidden">
+          {/* CLEAR BACKGROUND IMAGE (NO BLUR, NO OPACITY) */}
           <div
-            className="absolute inset-0 bg-cover bg-center opacity-40 blur-sm"
+            className="absolute inset-0 bg-cover bg-center"
             style={{
               backgroundImage:
                 "url('https://nrhvufbmsjmewpqhwcmp.supabase.co/storage/v1/object/public/products/Gemini_Generated_Image_8y2jg78y2jg78y2j.png')",
             }}
           />
 
-          <div className="relative container-main h-full flex flex-col items-center justify-center text-center">
+          {/* DARK OVERLAY FOR TEXT READABILITY */}
+          <div className="absolute inset-0 bg-black/35" />
+
+          {/* CONTENT */}
+          <div className="relative z-10 container-main h-full flex flex-col items-center justify-center text-center">
             <motion.p
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-sm uppercase tracking-widest text-muted-foreground mb-4"
+              className="text-sm uppercase tracking-widest text-background/80 mb-4"
             >
               Handcrafted Perfection
             </motion.p>
@@ -56,7 +61,7 @@ export default function Home() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="font-heading text-4xl md:text-6xl lg:text-7xl font-semibold text-foreground mb-4"
+              className="font-heading text-4xl md:text-6xl lg:text-7xl font-semibold text-background mb-4"
             >
               Where Tradition Meets
               <br />
@@ -67,7 +72,7 @@ export default function Home() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="text-muted-foreground max-w-xl mb-8"
+              className="text-background/80 max-w-xl mb-8"
             >
               Discover the finest collection of handcrafted ethnic wear, woven with stories of heritage.
             </motion.p>
@@ -80,7 +85,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* FEATURED PRODUCTS */}
+        {/* ================= FEATURED PRODUCTS ================= */}
         <section className="py-16">
           <div className="container-main">
             <div className="flex items-center justify-between mb-8">
@@ -107,7 +112,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* CATEGORIES */}
+        {/* ================= CATEGORIES ================= */}
         <section className="py-16 bg-secondary/30">
           <div className="container-main">
             <div className="text-center mb-12">
@@ -116,7 +121,7 @@ export default function Home() {
             </div>
 
             <div className="grid md:grid-cols-2 gap-6">
-              {/* Sarees category */}
+              {/* Sarees */}
               <Link to="/category/sarees" className="group relative h-80 rounded-xl overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 to-transparent z-10" />
                 <img
@@ -130,7 +135,7 @@ export default function Home() {
                 </div>
               </Link>
 
-              {/* Lehengas category */}
+              {/* Lehengas */}
               <Link to="/category/lehengas" className="group relative h-80 rounded-xl overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 to-transparent z-10" />
                 <img

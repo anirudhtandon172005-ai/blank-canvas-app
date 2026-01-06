@@ -1,10 +1,11 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Search, User, Heart, ShoppingBag, Menu, X } from "lucide-react";
+import { Search, User, Heart, ShoppingBag, Menu, X, Clock } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import { useCart } from "@/hooks/useCart";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useRecentSearches } from "@/hooks/useRecentSearches";
 import { searchProducts, type SearchResult } from "@/api/search";
 import SearchSuggestions from "./SearchSuggestions";
 import ThemeToggle from "./ThemeToggle";
@@ -22,6 +23,7 @@ export default function Navbar() {
   const { user } = useAuth();
   const { cartCount } = useCart();
   const navigate = useNavigate();
+  const { recentSearches, addSearch, removeSearch } = useRecentSearches();
 
   const debouncedQuery = useDebounce(searchQuery, 300);
 
@@ -99,6 +101,7 @@ export default function Navbar() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
+      addSearch(searchQuery.trim());
       setIsDropdownOpen(false);
       setIsMobileSearchOpen(false);
       navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
@@ -106,10 +109,20 @@ export default function Navbar() {
   };
 
   const handleSelect = (productId: string) => {
+    if (searchQuery.trim()) {
+      addSearch(searchQuery.trim());
+    }
     setIsDropdownOpen(false);
     setIsMobileSearchOpen(false);
     setSearchQuery("");
     setSuggestions([]);
+  };
+
+  const handleRecentSearchClick = (query: string) => {
+    setSearchQuery(query);
+    setIsDropdownOpen(false);
+    setIsMobileSearchOpen(false);
+    navigate(`/search?q=${encodeURIComponent(query)}`);
   };
 
   return (
@@ -136,18 +149,22 @@ export default function Navbar() {
                   placeholder="Search sarees, lehengas & more..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  onFocus={() => searchQuery.trim() && setIsDropdownOpen(true)}
+                  onFocus={() => setIsDropdownOpen(true)}
                   className="w-full pl-10 pr-4 py-2 bg-secondary rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
                 />
               </div>
             </form>
             <AnimatePresence>
-              {isDropdownOpen && (searchQuery.trim() || isLoading) && (
+              {isDropdownOpen && (
                 <SearchSuggestions
                   query={debouncedQuery}
                   results={suggestions}
                   onSelect={handleSelect}
                   isLoading={isLoading && searchQuery.trim().length > 0}
+                  recentSearches={recentSearches}
+                  onRecentSearchClick={handleRecentSearchClick}
+                  onRemoveRecentSearch={removeSearch}
+                  showRecent={!searchQuery.trim()}
                 />
               )}
             </AnimatePresence>
@@ -312,6 +329,29 @@ export default function Navbar() {
                   <div className="flex flex-col items-center justify-center h-64 text-center px-4">
                     <Search className="w-12 h-12 text-muted-foreground/50 mb-4" />
                     <p className="text-muted-foreground">No results found for "{debouncedQuery}"</p>
+                  </div>
+                ) : recentSearches.length > 0 ? (
+                  <div className="p-4">
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Recent Searches</p>
+                    <ul className="space-y-1">
+                      {recentSearches.map((search) => (
+                        <li key={search} className="flex items-center">
+                          <button
+                            onClick={() => handleRecentSearchClick(search)}
+                            className="flex-1 flex items-center gap-3 p-3 hover:bg-secondary rounded-lg transition-colors text-left"
+                          >
+                            <Clock className="w-5 h-5 text-muted-foreground" />
+                            <span className="text-foreground">{search}</span>
+                          </button>
+                          <button
+                            onClick={() => removeSearch(search)}
+                            className="p-3 hover:bg-secondary rounded-lg transition-colors text-muted-foreground hover:text-foreground"
+                          >
+                            <X className="w-5 h-5" />
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center h-64 text-center px-4">

@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import { Clock, X } from "lucide-react";
 import type { SearchResult } from "@/api/search";
 
 interface SearchSuggestionsProps {
@@ -7,6 +8,10 @@ interface SearchSuggestionsProps {
   results: SearchResult[];
   onSelect: (productId: string) => void;
   isLoading?: boolean;
+  recentSearches?: string[];
+  onRecentSearchClick?: (query: string) => void;
+  onRemoveRecentSearch?: (query: string) => void;
+  showRecent?: boolean;
 }
 
 export default function SearchSuggestions({
@@ -14,8 +19,50 @@ export default function SearchSuggestions({
   results,
   onSelect,
   isLoading = false,
+  recentSearches = [],
+  onRecentSearchClick,
+  onRemoveRecentSearch,
+  showRecent = false,
 }: SearchSuggestionsProps) {
   const displayResults = results.slice(0, 6);
+
+  // Show recent searches when focused but no query
+  if (showRecent && !query && recentSearches.length > 0) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -10 }}
+        className="absolute top-full left-0 right-0 mt-2 bg-background border border-border rounded-xl shadow-lg z-50 overflow-hidden"
+      >
+        <div className="p-3 pb-2">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Recent Searches</p>
+        </div>
+        <ul className="divide-y divide-border">
+          {recentSearches.map((search) => (
+            <li key={search} className="flex items-center">
+              <button
+                onClick={() => onRecentSearchClick?.(search)}
+                className="flex-1 flex items-center gap-3 p-3 hover:bg-secondary transition-colors text-left"
+              >
+                <Clock className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm text-foreground">{search}</span>
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRemoveRecentSearch?.(search);
+                }}
+                className="p-3 hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      </motion.div>
+    );
+  }
 
   if (isLoading) {
     return (

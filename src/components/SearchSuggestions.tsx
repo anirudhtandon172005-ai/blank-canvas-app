@@ -11,6 +11,7 @@ interface SearchSuggestionsProps {
   recentSearches?: string[];
   onRecentSearchClick?: (query: string) => void;
   onRemoveRecentSearch?: (query: string) => void;
+  onClearAllRecentSearches?: () => void;
   showRecent?: boolean;
 }
 
@@ -22,6 +23,7 @@ export default function SearchSuggestions({
   recentSearches = [],
   onRecentSearchClick,
   onRemoveRecentSearch,
+  onClearAllRecentSearches,
   showRecent = false,
 }: SearchSuggestionsProps) {
   const displayResults = results.slice(0, 6);
@@ -35,8 +37,19 @@ export default function SearchSuggestions({
         exit={{ opacity: 0, y: -10 }}
         className="absolute top-full left-0 right-0 mt-2 bg-background border border-border rounded-xl shadow-lg z-50 overflow-hidden"
       >
-        <div className="p-3 pb-2">
+        <div className="flex items-center justify-between px-3 py-2 border-b border-border">
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Recent Searches</p>
+          {onClearAllRecentSearches && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onClearAllRecentSearches();
+              }}
+              className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+            >
+              Clear all
+            </button>
+          )}
         </div>
         <ul className="divide-y divide-border">
           {recentSearches.map((search) => (

@@ -44,8 +44,8 @@ export default function Home() {
             }}
           />
 
-          {/* DARK OVERLAY FOR TEXT READABILITY */}
-          <div className="absolute inset-0 bg-black/35" />
+          {/* DARK OVERLAY FOR TEXT READABILITY - pointer-events-none to prevent blocking */}
+          <div className="absolute inset-0 bg-black/35 pointer-events-none" />
 
           {/* CONTENT */}
           <div className="relative z-10 container-main h-full flex flex-col items-center justify-center text-center">

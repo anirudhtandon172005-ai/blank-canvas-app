@@ -25,7 +25,7 @@ export default function Navbar() {
   const { user } = useAuth();
   const { cartCount } = useCart();
   const navigate = useNavigate();
-  const { recentSearches, addSearch, removeSearch } = useRecentSearches();
+  const { recentSearches, addSearch, removeSearch, clearSearches } = useRecentSearches();
 
   const debouncedQuery = useDebounce(searchQuery, 300);
 
@@ -138,6 +138,7 @@ export default function Navbar() {
                   recentSearches={recentSearches}
                   onRecentSearchClick={handleRecentSearchClick}
                   onRemoveRecentSearch={removeSearch}
+                  onClearAllRecentSearches={clearSearches}
                   showRecent={!searchQuery.trim()}
                 />
               )}

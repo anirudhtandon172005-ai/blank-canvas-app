@@ -113,50 +113,46 @@ export default function Navbar() {
             </span>
           </Link>
 
-          {/* Desktop Search - constrained width, no flex-1 to prevent overlap */}
-          <div ref={searchRef} className="hidden md:block w-full max-w-md mx-8 relative z-40">
-            <form onSubmit={handleSearch} className="w-full">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-                <input
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onFocus={() => setIsDropdownOpen(true)}
-                  placeholder="Search sarees, lehengas & more..."
-                  className="w-full pl-10 pr-4 py-2 rounded-full bg-secondary focus:ring-2 focus:ring-primary/20"
-                />
-              </div>
+          {/* Desktop Search - isolated stacking context, dropdown only renders when open */}
+          <div ref={searchRef} className="hidden md:block w-full max-w-md mx-8 relative">
+            <form onSubmit={handleSearch} className="w-full relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+              <input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => setIsDropdownOpen(true)}
+                placeholder="Search sarees, lehengas & more..."
+                className="w-full pl-10 pr-4 py-2 rounded-full bg-secondary focus:ring-2 focus:ring-primary/20"
+              />
             </form>
 
-            {/* Dropdown container - pointer-events managed based on open state */}
-            <div className={isDropdownOpen ? "pointer-events-auto" : "pointer-events-none"}>
-              <AnimatePresence>
-                {isDropdownOpen && (
-                  <SearchSuggestions
-                    query={debouncedQuery}
-                    results={suggestions}
-                    onSelect={handleSelect}
-                    isLoading={isLoading}
-                    recentSearches={recentSearches}
-                    onRecentSearchClick={handleRecentSearchClick}
-                    onRemoveRecentSearch={removeSearch}
-                    onClearAllRecentSearches={clearSearches}
-                    showRecent={!searchQuery.trim()}
-                  />
-                )}
-              </AnimatePresence>
-            </div>
+            {/* Dropdown - only rendered when open, positioned absolutely below form */}
+            <AnimatePresence>
+              {isDropdownOpen && (
+                <SearchSuggestions
+                  query={debouncedQuery}
+                  results={suggestions}
+                  onSelect={handleSelect}
+                  isLoading={isLoading}
+                  recentSearches={recentSearches}
+                  onRecentSearchClick={handleRecentSearchClick}
+                  onRemoveRecentSearch={removeSearch}
+                  onClearAllRecentSearches={clearSearches}
+                  showRecent={!searchQuery.trim()}
+                />
+              )}
+            </AnimatePresence>
           </div>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-6 relative z-50">
-            <Link to="/category/new-arrivals" className="nav-link">
+          {/* Desktop Navigation - higher z-index, pointer-events guaranteed */}
+          <nav className="hidden md:flex items-center gap-6">
+            <Link to="/category/new-arrivals" className="text-sm font-medium text-foreground/80 hover:text-foreground transition-colors">
               NEW ARRIVALS
             </Link>
-            <Link to="/category/sarees" className="nav-link">
+            <Link to="/category/sarees" className="text-sm font-medium text-foreground/80 hover:text-foreground transition-colors">
               SAREES
             </Link>
-            <Link to="/category/lehengas" className="nav-link">
+            <Link to="/category/lehengas" className="text-sm font-medium text-foreground/80 hover:text-foreground transition-colors">
               LEHENGAS
             </Link>
           </nav>

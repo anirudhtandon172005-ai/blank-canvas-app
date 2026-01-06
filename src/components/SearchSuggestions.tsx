@@ -35,7 +35,7 @@ export default function SearchSuggestions({
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -10 }}
-        className="absolute top-full left-0 right-0 mt-2 bg-background border border-border rounded-xl shadow-lg z-50 overflow-hidden"
+        className="absolute top-full left-0 right-0 mt-2 bg-background border border-border rounded-xl shadow-lg z-[100] overflow-hidden"
       >
         <div className="flex items-center justify-between px-3 py-2 border-b border-border">
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Recent Searches</p>
@@ -83,7 +83,7 @@ export default function SearchSuggestions({
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -10 }}
-        className="absolute top-full left-0 right-0 mt-2 bg-background border border-border rounded-xl shadow-lg z-50 overflow-hidden"
+        className="absolute top-full left-0 right-0 mt-2 bg-background border border-border rounded-xl shadow-lg z-[100] overflow-hidden"
       >
         <div className="p-3 space-y-3">
           {[1, 2, 3].map((i) => (
@@ -106,7 +106,7 @@ export default function SearchSuggestions({
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -10 }}
-        className="absolute top-full left-0 right-0 mt-2 bg-background border border-border rounded-xl shadow-lg z-50 p-6 text-center"
+        className="absolute top-full left-0 right-0 mt-2 bg-background border border-border rounded-xl shadow-lg z-[100] p-6 text-center"
       >
         <p className="text-muted-foreground text-sm">No results found for "{query}"</p>
       </motion.div>
@@ -122,7 +122,7 @@ export default function SearchSuggestions({
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
-      className="absolute top-full left-0 right-0 mt-2 bg-background border border-border rounded-xl shadow-lg z-50 overflow-hidden"
+      className="absolute top-full left-0 right-0 mt-2 bg-background border border-border rounded-xl shadow-lg z-[100] overflow-hidden"
     >
       <ul className="divide-y divide-border">
         {displayResults.map((product) => {

@@ -1,3 +1,4 @@
+//import { Link, useNavigate } from "react-router-dom";
 import { Link, useNavigate } from "react-router-dom";
 import { Search, User, Heart, ShoppingBag, Menu, X, Clock } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
@@ -17,6 +18,7 @@ export default function Navbar() {
   const [suggestions, setSuggestions] = useState<SearchResult[]>([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
   const searchRef = useRef<HTMLDivElement>(null);
   const mobileSearchRef = useRef<HTMLDivElement>(null);
 
@@ -27,7 +29,8 @@ export default function Navbar() {
 
   const debouncedQuery = useDebounce(searchQuery, 300);
 
-  // Fetch suggestions when debounced query changes
+  /* ---------------- SEARCH ---------------- */
+
   useEffect(() => {
     let cancelled = false;
 
@@ -41,42 +44,30 @@ export default function Navbar() {
       setIsLoading(true);
       try {
         const results = await searchProducts(debouncedQuery);
-        if (!cancelled) {
-          setSuggestions(results);
-        }
-      } catch (error) {
-        console.error("Search error:", error);
-        if (!cancelled) {
-          setSuggestions([]);
-        }
+        if (!cancelled) setSuggestions(results);
+      } catch {
+        if (!cancelled) setSuggestions([]);
       } finally {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
+        if (!cancelled) setIsLoading(false);
       }
     }
 
     fetchSuggestions();
-
     return () => {
       cancelled = true;
     };
   }, [debouncedQuery]);
 
-  // Show dropdown when typing
   useEffect(() => {
-    if (searchQuery.trim()) {
-      setIsDropdownOpen(true);
-    }
+    if (searchQuery.trim()) setIsDropdownOpen(true);
   }, [searchQuery]);
 
-  // Close dropdown on click outside
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+    function handleClickOutside(e: MouseEvent) {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
         setIsDropdownOpen(false);
       }
-      if (mobileSearchRef.current && !mobileSearchRef.current.contains(event.target as Node)) {
+      if (mobileSearchRef.current && !mobileSearchRef.current.contains(e.target as Node)) {
         setIsMobileSearchOpen(false);
       }
     }
@@ -85,82 +76,65 @@ export default function Navbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Close dropdown on escape
-  useEffect(() => {
-    function handleEscape(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        setIsDropdownOpen(false);
-        setIsMobileSearchOpen(false);
-      }
-    }
-
-    document.addEventListener("keydown", handleEscape);
-    return () => document.removeEventListener("keydown", handleEscape);
-  }, []);
-
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
-      addSearch(searchQuery.trim());
-      setIsDropdownOpen(false);
-      setIsMobileSearchOpen(false);
-      navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
-    }
+    if (!searchQuery.trim()) return;
+
+    addSearch(searchQuery);
+    setIsDropdownOpen(false);
+    navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
   };
 
-  const handleSelect = (productId: string) => {
-    if (searchQuery.trim()) {
-      addSearch(searchQuery.trim());
-    }
-    setIsDropdownOpen(false);
-    setIsMobileSearchOpen(false);
+  const handleSelect = () => {
     setSearchQuery("");
     setSuggestions([]);
+    setIsDropdownOpen(false);
   };
 
   const handleRecentSearchClick = (query: string) => {
     setSearchQuery(query);
-    setIsDropdownOpen(false);
-    setIsMobileSearchOpen(false);
     navigate(`/search?q=${encodeURIComponent(query)}`);
+    setIsDropdownOpen(false);
   };
 
+  /* ---------------- RENDER ---------------- */
+
   return (
-    <header className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
+    <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b border-border">
       <div className="container-main">
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
             <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-              <span className="text-primary-foreground text-sm font-bold">K</span>
+              <span className="text-primary-foreground font-bold text-sm">K</span>
             </div>
-            <span className="font-heading text-xl font-semibold text-foreground">
+            <span className="font-heading text-xl font-semibold">
               KALA <span className="font-normal">MANDIR</span>
             </span>
           </Link>
 
           {/* Desktop Search */}
-          <div ref={searchRef} className="hidden md:flex items-center flex-1 max-w-md mx-8 relative">
+          <div ref={searchRef} className="hidden md:flex flex-1 max-w-md mx-8 relative z-40">
             <form onSubmit={handleSearch} className="w-full">
-              <div className="relative w-full">
+              <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <input
-                  type="text"
-                  placeholder="Search sarees, lehengas & more..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onFocus={() => setIsDropdownOpen(true)}
-                  className="w-full pl-10 pr-4 py-2 bg-secondary rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  placeholder="Search sarees, lehengas & more..."
+                  className="w-full pl-10 pr-4 py-2 rounded-full bg-secondary focus:ring-2 focus:ring-primary/20"
                 />
               </div>
             </form>
+
             <AnimatePresence>
               {isDropdownOpen && (
                 <SearchSuggestions
                   query={debouncedQuery}
                   results={suggestions}
                   onSelect={handleSelect}
-                  isLoading={isLoading && searchQuery.trim().length > 0}
+                  isLoading={isLoading}
                   recentSearches={recentSearches}
                   onRecentSearchClick={handleRecentSearchClick}
                   onRemoveRecentSearch={removeSearch}
@@ -171,44 +145,33 @@ export default function Navbar() {
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-6">
-            <Link to="/category/new-arrivals" className="text-sm font-medium text-foreground hover:text-primary transition-colors">
+          <nav className="hidden md:flex items-center gap-6 relative z-50">
+            <Link to="/category/new-arrivals" className="nav-link">
               NEW ARRIVALS
             </Link>
-            <Link to="/category/sarees" className="text-sm font-medium text-foreground hover:text-primary transition-colors">
+            <Link to="/category/sarees" className="nav-link">
               SAREES
             </Link>
-            <Link to="/category/lehengas" className="text-sm font-medium text-foreground hover:text-primary transition-colors">
+            <Link to="/category/lehengas" className="nav-link">
               LEHENGAS
             </Link>
           </nav>
 
           {/* Actions */}
           <div className="flex items-center gap-2 md:gap-4">
-            {/* Mobile Search Button */}
-            <button
-              onClick={() => setIsMobileSearchOpen(true)}
-              className="p-2 hover:bg-secondary rounded-full transition-colors md:hidden"
-            >
-              <Search className="w-5 h-5" />
-            </button>
             <ThemeToggle />
-            <Link to={user ? "/profile" : "/login"} className="p-2 hover:bg-secondary rounded-full transition-colors">
-              <User className="w-5 h-5" />
+            <Link to={user ? "/profile" : "/login"} className="icon-btn">
+              <User />
             </Link>
-            <Link to="/wishlist" className="p-2 hover:bg-secondary rounded-full transition-colors hidden md:flex">
-              <Heart className="w-5 h-5" />
+            <Link to="/wishlist" className="icon-btn hidden md:flex">
+              <Heart />
             </Link>
-            <Link to="/cart" className="p-2 hover:bg-secondary rounded-full transition-colors relative">
-              <ShoppingBag className="w-5 h-5" />
-              {cartCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-primary text-primary-foreground text-xs rounded-full flex items-center justify-center">
-                  {cartCount}
-                </span>
-              )}
+            <Link to="/cart" className="icon-btn relative">
+              <ShoppingBag />
+              {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
             </Link>
-            <button onClick={() => setIsMenuOpen(true)} className="p-2 md:hidden">
-              <Menu className="w-5 h-5" />
+            <button onClick={() => setIsMenuOpen(true)} className="md:hidden">
+              <Menu />
             </button>
           </div>
         </div>
@@ -218,149 +181,23 @@ export default function Navbar() {
       <AnimatePresence>
         {isMenuOpen && (
           <motion.div
-            initial={{ opacity: 0, x: "100%" }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: "100%" }}
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
             className="fixed inset-0 z-50 bg-background md:hidden"
           >
-            <div className="flex items-center justify-between p-4 border-b border-border">
-              <span className="font-heading text-xl font-semibold">Menu</span>
-              <button onClick={() => setIsMenuOpen(false)} className="p-2">
-                <X className="w-5 h-5" />
+            <div className="flex justify-between p-4 border-b">
+              <span className="text-xl font-heading">Menu</span>
+              <button onClick={() => setIsMenuOpen(false)}>
+                <X />
               </button>
             </div>
             <nav className="p-4 space-y-4">
-              <Link to="/" onClick={() => setIsMenuOpen(false)} className="block py-2 text-lg">Home</Link>
-              <Link to="/category/sarees" onClick={() => setIsMenuOpen(false)} className="block py-2 text-lg">Sarees</Link>
-              <Link to="/category/lehengas" onClick={() => setIsMenuOpen(false)} className="block py-2 text-lg">Lehengas</Link>
-              <Link to="/wishlist" onClick={() => setIsMenuOpen(false)} className="block py-2 text-lg">Wishlist</Link>
-              <Link to="/orders" onClick={() => setIsMenuOpen(false)} className="block py-2 text-lg">My Orders</Link>
-              <Link to={user ? "/profile" : "/login"} onClick={() => setIsMenuOpen(false)} className="block py-2 text-lg">
-                {user ? "Profile" : "Login"}
-              </Link>
+              <Link to="/category/sarees">Sarees</Link>
+              <Link to="/category/lehengas">Lehengas</Link>
+              <Link to="/wishlist">Wishlist</Link>
+              <Link to={user ? "/profile" : "/login"}>{user ? "Profile" : "Login"}</Link>
             </nav>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Mobile Fullscreen Search Modal */}
-      <AnimatePresence>
-        {isMobileSearchOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-background/95 backdrop-blur-lg md:hidden"
-          >
-            <div ref={mobileSearchRef} className="flex flex-col h-full">
-              {/* Header */}
-              <div className="flex items-center gap-3 p-4 border-b border-border">
-                <form onSubmit={handleSearch} className="flex-1">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                    <input
-                      type="text"
-                      placeholder="Search sarees, lehengas & more..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      autoFocus
-                      className="w-full pl-12 pr-4 py-3 bg-secondary rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-primary/20"
-                    />
-                  </div>
-                </form>
-                <button
-                  onClick={() => {
-                    setIsMobileSearchOpen(false);
-                    setSearchQuery("");
-                    setSuggestions([]);
-                  }}
-                  className="p-2 hover:bg-secondary rounded-full"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-
-              {/* Results */}
-              <div className="flex-1 overflow-y-auto">
-                {isLoading && searchQuery.trim() ? (
-                  <div className="p-4 space-y-4">
-                    {[1, 2, 3, 4].map((i) => (
-                      <div key={i} className="flex items-center gap-4 animate-pulse">
-                        <div className="w-16 h-16 bg-muted rounded-lg" />
-                        <div className="flex-1 space-y-2">
-                          <div className="h-4 bg-muted rounded w-3/4" />
-                          <div className="h-3 bg-muted rounded w-1/4" />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : suggestions.length > 0 ? (
-                  <ul className="divide-y divide-border">
-                    {suggestions.slice(0, 10).map((product) => {
-                      const imageUrl = product.product_images?.[0]?.image_url || "/placeholder.svg";
-                      const price = product.sale_price || product.base_price;
-
-                      return (
-                        <li key={product.id}>
-                          <Link
-                            to={`/product/${product.id}`}
-                            onClick={() => handleSelect(product.id)}
-                            className="flex items-center gap-4 p-4 hover:bg-secondary active:bg-secondary transition-colors"
-                          >
-                            <img
-                              src={imageUrl}
-                              alt={product.name}
-                              className="w-16 h-16 object-cover rounded-lg bg-muted"
-                            />
-                            <div className="flex-1 min-w-0">
-                              <p className="font-medium text-foreground line-clamp-2">
-                                {product.name}
-                              </p>
-                              <p className="text-primary font-semibold mt-1">
-                                ₹{price.toLocaleString()}
-                              </p>
-                            </div>
-                          </Link>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                ) : debouncedQuery.trim() ? (
-                  <div className="flex flex-col items-center justify-center h-64 text-center px-4">
-                    <Search className="w-12 h-12 text-muted-foreground/50 mb-4" />
-                    <p className="text-muted-foreground">No results found for "{debouncedQuery}"</p>
-                  </div>
-                ) : recentSearches.length > 0 ? (
-                  <div className="p-4">
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Recent Searches</p>
-                    <ul className="space-y-1">
-                      {recentSearches.map((search) => (
-                        <li key={search} className="flex items-center">
-                          <button
-                            onClick={() => handleRecentSearchClick(search)}
-                            className="flex-1 flex items-center gap-3 p-3 hover:bg-secondary rounded-lg transition-colors text-left"
-                          >
-                            <Clock className="w-5 h-5 text-muted-foreground" />
-                            <span className="text-foreground">{search}</span>
-                          </button>
-                          <button
-                            onClick={() => removeSearch(search)}
-                            className="p-3 hover:bg-secondary rounded-lg transition-colors text-muted-foreground hover:text-foreground"
-                          >
-                            <X className="w-5 h-5" />
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-64 text-center px-4">
-                    <Search className="w-12 h-12 text-muted-foreground/50 mb-4" />
-                    <p className="text-muted-foreground">Start typing to search products</p>
-                  </div>
-                )}
-              </div>
-            </div>
           </motion.div>
         )}
       </AnimatePresence>

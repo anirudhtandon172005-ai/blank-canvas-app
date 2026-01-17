@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Search, User, Heart, ShoppingBag, Menu, X, Clock } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { useCart } from "@/hooks/useCart";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useRecentSearches } from "@/hooks/useRecentSearches";
@@ -22,7 +22,7 @@ export default function Navbar() {
   const searchRef = useRef<HTMLDivElement>(null);
   const mobileSearchRef = useRef<HTMLDivElement>(null);
 
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   const { cartCount } = useCart();
   const navigate = useNavigate();
   const { recentSearches, addSearch, removeSearch, clearSearches } = useRecentSearches();
@@ -160,7 +160,7 @@ export default function Navbar() {
           {/* Actions */}
           <div className="flex items-center gap-2 md:gap-4">
             <ThemeToggle />
-            <Link to={user ? "/profile" : "/login"} className="icon-btn">
+            <Link to={user ? "/profile" : "/auth"} className="icon-btn">
               <User />
             </Link>
             <Link to="/wishlist" className="icon-btn hidden md:flex">
@@ -196,7 +196,7 @@ export default function Navbar() {
               <Link to="/category/sarees">Sarees</Link>
               <Link to="/category/lehengas">Lehengas</Link>
               <Link to="/wishlist">Wishlist</Link>
-              <Link to={user ? "/profile" : "/login"}>{user ? "Profile" : "Login"}</Link>
+              <Link to={user ? "/profile" : "/auth"}>{user ? "Profile" : "Login"}</Link>
             </nav>
           </motion.div>
         )}

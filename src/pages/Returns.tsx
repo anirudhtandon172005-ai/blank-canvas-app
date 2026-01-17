@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { getReturnableOrders, submitReturnRequest } from "@/api/returns";
 import { getOrderDetails } from "@/api/orders";
 import { toast } from "@/hooks/use-toast";
@@ -33,7 +33,7 @@ export default function Returns() {
   const [searchParams] = useSearchParams();
   const preselectedOrderId = searchParams.get("orderId");
   
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuthContext();
   const [returnableOrders, setReturnableOrders] = useState<any[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);

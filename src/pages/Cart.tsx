@@ -6,11 +6,11 @@ import Footer from "@/components/Footer";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import Loader from "@/components/Loader";
 import { useCart } from "@/hooks/useCart";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthContext } from "@/contexts/AuthContext";
 
 export default function Cart() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   const { cart, loading, cartTotal, updateItemQuantity, removeItem } = useCart();
 
   const shippingCost = cartTotal >= 2000 ? 0 : 99;

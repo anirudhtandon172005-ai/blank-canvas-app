@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { useAddresses } from "@/hooks/useAddresses";
 import Loader from "@/components/Loader";
 import { toast } from "@/hooks/use-toast";
@@ -26,7 +26,7 @@ const INDIAN_STATES = [
 
 export default function CreateAddress() {
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuthContext();
   const { createAddress, loading } = useAddresses();
   const [saving, setSaving] = useState(false);
 

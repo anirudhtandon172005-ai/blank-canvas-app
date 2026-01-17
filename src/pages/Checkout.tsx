@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { MapPin, Plus, Check, CreditCard, Banknote, Truck, ShieldCheck } from "lucide-react";
 
@@ -8,9 +8,10 @@ import Footer from "@/components/Footer";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import Loader from "@/components/Loader";
 import RazorpayButton, { type VerifiedPaymentResponse } from "@/components/RazorpayButton";
+import AuthModal from "@/components/AuthModal";
 
 import { useCart } from "@/hooks/useCart";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { getAddresses, addAddress } from "@/api/addresses";
 import { placeOrder } from "@/api/orders";
 import { toast } from "@/hooks/use-toast";
@@ -30,12 +31,14 @@ interface Address {
 
 export default function Checkout() {
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
+  const location = useLocation();
+  const { user, loading: authLoading, isAuthenticated } = useAuthContext();
   const { cart, loading: cartLoading, cartTotal } = useCart();
 
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
   const [showAddAddress, setShowAddAddress] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "online">("cod");
   const [loading, setLoading] = useState(true);
   const [placing, setPlacing] = useState(false);
@@ -51,18 +54,26 @@ export default function Checkout() {
     label: "",
   });
 
-  // ✅ FIXED AUTH CHECK
+  // Show auth modal if not authenticated
   useEffect(() => {
-    if (authLoading) return; // WAIT UNTIL SUPABASE FINISHES CHECKING SESSION
+    if (!authLoading && !isAuthenticated) {
+      setShowAuthModal(true);
+      setLoading(false);
+    }
+  }, [authLoading, isAuthenticated]);
+
+  // Fetch addresses when authenticated
+  useEffect(() => {
+    if (authLoading) return;
 
     if (!user) {
-      navigate("/login");
+      setLoading(false);
       return;
     }
 
     async function fetchAddresses() {
       try {
-        const data = await getAddresses(user.id);
+        const data = await getAddresses(user!.id);
         setAddresses(data);
         const defaultAddr = data.find((a) => a.is_default) || data[0];
         setSelectedAddress(defaultAddr || null);
@@ -74,7 +85,11 @@ export default function Checkout() {
     }
 
     fetchAddresses();
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading]);
+
+  const handleAuthSuccess = () => {
+    setShowAuthModal(false);
+  };
 
   const cartItems = cart?.items || [];
   const shippingCost = cartTotal >= 2000 ? 0 : 99;
@@ -503,6 +518,13 @@ export default function Checkout() {
       </main>
 
       <Footer />
+
+      {/* Auth Modal */}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onSuccess={handleAuthSuccess}
+      />
     </div>
   );
 }

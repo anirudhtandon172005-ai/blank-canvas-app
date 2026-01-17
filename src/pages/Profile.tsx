@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { useAddresses } from "@/hooks/useAddresses";
 import { getUserProfile, updateProfile, logout } from "@/api/auth";
 import { toast } from "@/hooks/use-toast";
@@ -17,7 +17,7 @@ import { Link } from "react-router-dom";
 
 export default function Profile() {
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuthContext();
   const { defaultAddress } = useAddresses();
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);

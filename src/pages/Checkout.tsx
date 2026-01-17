@@ -7,7 +7,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import Loader from "@/components/Loader";
-import PayPalButton, { type PayPalPaymentDetails } from "@/components/PayPalButton";
+import RazorpayButton, { type RazorpaySuccessResponse } from "@/components/RazorpayButton";
 
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";

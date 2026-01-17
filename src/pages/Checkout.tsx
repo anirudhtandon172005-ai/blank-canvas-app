@@ -185,19 +185,19 @@ export default function Checkout() {
     await createOrderAndRedirect("COD");
   };
 
-  // Handle PayPal success
-  const handlePayPalSuccess = async (paymentDetails: PayPalPaymentDetails) => {
+  // Handle Razorpay success
+  const handleRazorpaySuccess = async (response: RazorpaySuccessResponse) => {
     if (!selectedAddress) return;
 
-    const transactionId = paymentDetails.id;
+    const transactionId = response.razorpay_payment_id;
     await createOrderAndRedirect(transactionId);
   };
 
-  // Handle PayPal error
-  const handlePayPalError = (error: Error) => {
+  // Handle Razorpay error
+  const handleRazorpayError = (error: Error) => {
     toast({
       title: "Payment Failed",
-      description: error.message || "PayPal payment could not be completed",
+      description: error.message || "Razorpay payment could not be completed",
       variant: "destructive",
     });
   };
@@ -475,10 +475,12 @@ export default function Checkout() {
                         <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
                       </div>
                     ) : (
-                      <PayPalButton
+                      <RazorpayButton
                         amount={totalAmount}
-                        onSuccess={handlePayPalSuccess}
-                        onError={handlePayPalError}
+                        customerName={selectedAddress?.full_name}
+                        customerPhone={selectedAddress?.phone}
+                        onSuccess={handleRazorpaySuccess}
+                        onError={handleRazorpayError}
                         disabled={!selectedAddress}
                       />
                     )}

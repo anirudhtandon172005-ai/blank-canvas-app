@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { getOrderDetails } from "@/api/orders";
 import { toast } from "@/hooks/use-toast";
 import Loader from "@/components/Loader";
@@ -34,7 +34,7 @@ const STATUS_COLORS: Record<string, string> = {
 export default function OrderDetails() {
   const { orderId } = useParams<{ orderId: string }>();
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuthContext();
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 

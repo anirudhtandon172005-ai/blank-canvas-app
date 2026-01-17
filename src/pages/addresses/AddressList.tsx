@@ -6,7 +6,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { useAddresses } from "@/hooks/useAddresses";
 import Loader from "@/components/Loader";
 import {
@@ -23,7 +23,7 @@ import {
 
 export default function AddressList() {
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuthContext();
   const { addresses, loading, removeAddress, makeDefault } = useAddresses();
 
   useEffect(() => {

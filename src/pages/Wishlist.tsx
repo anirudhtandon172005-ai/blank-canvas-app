@@ -6,14 +6,14 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { useWishlist } from "@/hooks/useWishlist";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { useCart } from "@/hooks/useCart";
 import { toast } from "@/hooks/use-toast";
 import Loader from "@/components/Loader";
 
 export default function Wishlist() {
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuthContext();
   const { wishlist, loading, removeItem, refetch } = useWishlist();
   const { addItem: addToCart } = useCart();
 

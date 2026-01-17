@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useAuth } from "./useAuth";
+import { useAuthContext } from "@/contexts/AuthContext";
 import {
   getAddresses,
   addAddress,
@@ -40,7 +40,7 @@ export interface AddressFormData {
 }
 
 export function useAddresses() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuthContext();
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

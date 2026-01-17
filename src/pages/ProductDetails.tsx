@@ -10,13 +10,13 @@ import Loader from "@/components/Loader";
 import { getProductBySlug, getAllProducts } from "@/api/products";
 import { useCart } from "@/hooks/useCart";
 import { useWishlist } from "@/hooks/useWishlist";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 
 export default function ProductDetails() {
   const { productSlug } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   const { addItem } = useCart();
   const { isWishlisted, toggleItem } = useWishlist();
   

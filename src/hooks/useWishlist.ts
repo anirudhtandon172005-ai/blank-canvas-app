@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
-import { useAuth } from "./useAuth";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { getWishlist, addToWishlist, removeFromWishlist } from "@/api/wishlist";
 import { toast } from "@/hooks/use-toast";
 
 export function useWishlist() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuthContext();
   const [wishlist, setWishlist] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [wishlistIds, setWishlistIds] = useState<Set<string>>(new Set());

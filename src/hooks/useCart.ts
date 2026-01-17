@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useAuth } from "./useAuth";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { getCart, addToCart, updateQuantity, removeFromCart, clearCart } from "@/api/cart";
 import { toast } from "@/hooks/use-toast";
 
@@ -19,7 +19,7 @@ interface Cart {
 }
 
 export function useCart() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuthContext();
   const [cart, setCart] = useState<Cart | null>(null);
   const [loading, setLoading] = useState(true);
 

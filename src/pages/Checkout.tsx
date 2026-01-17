@@ -7,7 +7,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import Loader from "@/components/Loader";
-import RazorpayButton, { type RazorpaySuccessResponse } from "@/components/RazorpayButton";
+import RazorpayButton, { type VerifiedPaymentResponse } from "@/components/RazorpayButton";
 
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";
@@ -185,11 +185,12 @@ export default function Checkout() {
     await createOrderAndRedirect("COD");
   };
 
-  // Handle Razorpay success
-  const handleRazorpaySuccess = async (response: RazorpaySuccessResponse) => {
+  // Handle Razorpay success (after backend verification)
+  const handleRazorpaySuccess = async (response: VerifiedPaymentResponse) => {
     if (!selectedAddress) return;
 
-    const transactionId = response.razorpay_payment_id;
+    // Payment is already verified by backend, proceed with order
+    const transactionId = response.payment_id;
     await createOrderAndRedirect(transactionId);
   };
 

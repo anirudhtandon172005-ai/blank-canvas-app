@@ -5,15 +5,22 @@ import { supabase } from "@/integrations/supabase/client";
 export interface SearchResult {
   id: string;
   name: string;
-  slug: string;
+  slug: string; // ✅ IMPORTANT
   description: string | null;
   base_price: number;
   sale_price: number | null;
-  product_images: { image_url: string }[];
+  categories: {
+    id: string;
+    name: string;
+    slug: string;
+  } | null;
+  product_images: {
+    image_url: string;
+  }[];
 }
 
 export async function searchProducts(query: string): Promise<SearchResult[]> {
-  if (!query.trim()) return [];
+  if (!query || !query.trim()) return [];
 
   const searchTerm = query.trim();
 
@@ -27,18 +34,24 @@ export async function searchProducts(query: string): Promise<SearchResult[]> {
       description,
       base_price,
       sale_price,
+      categories (
+        id,
+        name,
+        slug
+      ),
       product_images (
         image_url
       )
     `,
     )
     .eq("is_active", true)
-    .or(`name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
+    .or(`name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`)
+    .limit(10);
 
   if (error) {
     console.error("Search error:", error);
     return [];
   }
 
-  return data || [];
+  return data ?? [];
 }

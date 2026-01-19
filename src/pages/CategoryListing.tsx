@@ -1,8 +1,8 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ChevronDown, X, SlidersHorizontal } from "lucide-react";
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -10,6 +10,7 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 import ProductCard from "@/components/ProductCard";
 import Loader from "@/components/Loader";
 import { supabase } from "@/integrations/supabase/client";
+import { useResponsivePageSize } from "@/hooks/useResponsivePageSize";
 
 const COLORS = [
   { name: "Red", value: "red" },
@@ -51,10 +52,8 @@ type ProductRow = {
   created_at: string;
   updated_at: string;
   product_images: any[];
-  product_variants: any[];
+  product_variants: any[]
 };
-
-const PAGE_SIZE = 2;
 
 function formatProduct(p: ProductRow) {
   return {
@@ -76,6 +75,7 @@ function formatProduct(p: ProductRow) {
 
 export default function CategoryListing() {
   const { categorySlug } = useParams();
+  const queryClient = useQueryClient();
 
   const [showFilters, setShowFilters] = useState(false);
 
@@ -86,6 +86,10 @@ export default function CategoryListing() {
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 50000]);
   const [sortBy, setSortBy] = useState<SortBy>("popularity");
   const [showSortDropdown, setShowSortDropdown] = useState(false);
+
+  // Responsive page size: adapts to screen width for full grid rows
+  const { pageSize, breakpoint } = useResponsivePageSize();
+  const prevBreakpointRef = useRef(breakpoint);
 
   const isAll = !categorySlug || categorySlug === "all";
 
@@ -107,14 +111,23 @@ export default function CategoryListing() {
 
   const categoryId = categoryQuery.data?.id ?? null;
 
+  // Reset pagination when breakpoint changes
+  useEffect(() => {
+    if (prevBreakpointRef.current !== breakpoint) {
+      prevBreakpointRef.current = breakpoint;
+      // Invalidate the products query to refetch with new page size
+      queryClient.resetQueries({ queryKey: ["category-products", isAll ? "all" : categoryId] });
+    }
+  }, [breakpoint, queryClient, isAll, categoryId]);
+
   // 2) Fetch products by category_id (or all products for /category/all), paginated, with count
   const productsQuery = useInfiniteQuery({
-    queryKey: ["category-products", isAll ? "all" : categoryId],
+    queryKey: ["category-products", isAll ? "all" : categoryId, pageSize],
     enabled: isAll || !!categoryId,
     initialPageParam: 0,
     queryFn: async ({ pageParam }) => {
       const from = Number(pageParam);
-      const to = from + PAGE_SIZE - 1;
+      const to = from + pageSize - 1;
 
       let query = supabase
         .from("products")
@@ -141,6 +154,7 @@ export default function CategoryListing() {
         total: count ?? 0,
         from,
         to,
+        pageSize,
       };
     },
     getNextPageParam: (lastPage, allPages) => {

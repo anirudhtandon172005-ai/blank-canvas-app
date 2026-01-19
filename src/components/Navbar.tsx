@@ -3,6 +3,7 @@ import { Search, User, Heart, ShoppingBag, Menu, X, ChevronDown } from "lucide-r
 import { useState, useEffect, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useCart } from "@/hooks/useCart";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -104,15 +105,24 @@ export default function Navbar() {
           >
             All Products
           </Link>
-          {categories.map((category) => (
-            <Link
-              key={category.id}
-              to={`/category/${category.slug}`}
-              className="text-sm font-medium hover:text-primary transition-colors"
-            >
-              {category.name}
-            </Link>
-          ))}
+          {categoriesQuery.isLoading ? (
+            // Skeleton placeholders for desktop nav
+            <>
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-4 w-14" />
+            </>
+          ) : (
+            categories.map((category) => (
+              <Link
+                key={category.id}
+                to={`/category/${category.slug}`}
+                className="text-sm font-medium hover:text-primary transition-colors"
+              >
+                {category.name}
+              </Link>
+            ))
+          )}
         </nav>
 
         {/* Search */}
@@ -204,7 +214,18 @@ export default function Navbar() {
               </button>
 
               {categoriesQuery.isLoading ? (
-                <div className="py-3 px-4 text-muted-foreground text-sm">Loading categories...</div>
+                // Skeleton placeholders for mobile nav
+                <>
+                  <div className="py-3 px-4">
+                    <Skeleton className="h-5 w-24" />
+                  </div>
+                  <div className="py-3 px-4">
+                    <Skeleton className="h-5 w-28" />
+                  </div>
+                  <div className="py-3 px-4">
+                    <Skeleton className="h-5 w-20" />
+                  </div>
+                </>
               ) : categoriesQuery.isError ? (
                 <div className="py-3 px-4 text-destructive text-sm">Failed to load categories</div>
               ) : (

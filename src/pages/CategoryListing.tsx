@@ -1,13 +1,16 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ChevronDown, X, SlidersHorizontal } from "lucide-react";
+import { ChevronDown, X, SlidersHorizontal, Loader2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import ProductCard from "@/components/ProductCard";
 import Loader from "@/components/Loader";
-import { getProductsByCategorySlug, getCategoryBySlug, getAllProducts } from "@/api/products";
+import { getCategoryBySlug } from "@/api/products";
+import { supabase } from "@/integrations/supabase/client";
+
+const PAGE_SIZE = 2;
 
 const COLORS = [
   { name: "Red", value: "red", hex: "#DC2626" },
@@ -27,13 +30,35 @@ const SORT_OPTIONS = [
   { label: "Newest First", value: "newest" },
 ];
 
+function formatProduct(p: any) {
+  return {
+    id: p.id,
+    name: p.name,
+    slug: p.slug,
+    description: p.description,
+    base_price: p.base_price,
+    sale_price: p.sale_price,
+    is_active: p.is_active,
+    is_featured: p.is_featured,
+    category_id: p.category_id,
+    created_at: p.created_at,
+    updated_at: p.updated_at,
+    images: p.product_images || [],
+    variants: p.product_variants || [],
+    category: p.categories || null,
+  };
+}
+
 export default function CategoryListing() {
   const { categorySlug } = useParams();
   const [category, setCategory] = useState<any>(null);
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
-  
+  const [totalCount, setTotalCount] = useState(0);
+  const [offset, setOffset] = useState(0);
+
   // Filters
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [selectedOccasions, setSelectedOccasions] = useState<string[]>([]);
@@ -41,21 +66,68 @@ export default function CategoryListing() {
   const [sortBy, setSortBy] = useState("popularity");
   const [showSortDropdown, setShowSortDropdown] = useState(false);
 
+  // Fetch products with pagination
+  const fetchProducts = useCallback(
+    async (categoryId: string | null, currentOffset: number, append: boolean = false) => {
+      const from = currentOffset;
+      const to = currentOffset + PAGE_SIZE - 1;
+
+      let query = supabase
+        .from("products")
+        .select(
+          `
+          *,
+          product_images (*),
+          product_variants (*)
+        `,
+          { count: "exact" }
+        )
+        .eq("is_active", true)
+        .order("created_at", { ascending: false })
+        .range(from, to);
+
+      if (categoryId) {
+        query = query.eq("category_id", categoryId);
+      }
+
+      const { data, error, count } = await query;
+
+      if (error) {
+        console.error("Error fetching products:", error);
+        return;
+      }
+
+      const formattedProducts = (data || []).map(formatProduct);
+
+      if (append) {
+        setProducts((prev) => [...prev, ...formattedProducts]);
+      } else {
+        setProducts(formattedProducts);
+      }
+
+      if (count !== null) {
+        setTotalCount(count);
+      }
+    },
+    []
+  );
+
+  // Initial fetch
   useEffect(() => {
     async function fetchData() {
       setLoading(true);
+      setProducts([]);
+      setOffset(0);
+      setTotalCount(0);
+
       try {
         if (categorySlug && categorySlug !== "all") {
-          const [categoryData, productsData] = await Promise.all([
-            getCategoryBySlug(categorySlug),
-            getProductsByCategorySlug(categorySlug),
-          ]);
+          const categoryData = await getCategoryBySlug(categorySlug);
           setCategory(categoryData);
-          setProducts(productsData || []);
+          await fetchProducts(categoryData?.id || null, 0, false);
         } else {
-          const productsData = await getAllProducts();
-          setProducts(productsData || []);
           setCategory({ name: "All Products", description: "Discover our complete collection" });
+          await fetchProducts(null, 0, false);
         }
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -64,7 +136,25 @@ export default function CategoryListing() {
       }
     }
     fetchData();
-  }, [categorySlug]);
+  }, [categorySlug, fetchProducts]);
+
+  // Load more handler
+  const handleLoadMore = async () => {
+    if (loadingMore || products.length >= totalCount) return;
+
+    setLoadingMore(true);
+    const newOffset = offset + PAGE_SIZE;
+    setOffset(newOffset);
+
+    try {
+      const categoryId = categorySlug && categorySlug !== "all" ? category?.id : null;
+      await fetchProducts(categoryId, newOffset, true);
+    } catch (error) {
+      console.error("Error loading more products:", error);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   const toggleColor = (color: string) => {
     setSelectedColors((prev) =>
@@ -87,14 +177,13 @@ export default function CategoryListing() {
   const filteredProducts = products.filter((product) => {
     const price = product.sale_price || product.base_price;
     if (price < priceRange[0] || price > priceRange[1]) return false;
-    // Add more filter logic as needed
     return true;
   });
 
   const sortedProducts = [...filteredProducts].sort((a, b) => {
     const priceA = a.sale_price || a.base_price;
     const priceB = b.sale_price || b.base_price;
-    
+
     switch (sortBy) {
       case "price_asc":
         return priceA - priceB;
@@ -107,10 +196,12 @@ export default function CategoryListing() {
     }
   });
 
+  const hasMoreProducts = products.length < totalCount;
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      
+
       <main className="flex-1">
         <div className="container-main">
           <Breadcrumbs
@@ -130,10 +221,12 @@ export default function CategoryListing() {
 
           <div className="flex gap-8">
             {/* Filters Sidebar */}
-            <aside className={`
+            <aside
+              className={`
               fixed inset-0 z-50 bg-background lg:static lg:z-0 lg:bg-transparent
               ${showFilters ? "block" : "hidden"} lg:block lg:w-64 lg:shrink-0
-            `}>
+            `}
+            >
               <div className="h-full overflow-y-auto p-6 lg:p-0">
                 {/* Mobile Header */}
                 <div className="flex items-center justify-between mb-6 lg:hidden">
@@ -233,7 +326,7 @@ export default function CategoryListing() {
                     <span>Filters</span>
                   </button>
                   <span className="text-primary text-sm">
-                    Showing {sortedProducts.length} items
+                    Showing {sortedProducts.length} of {totalCount} items
                   </span>
                 </div>
 
@@ -243,7 +336,9 @@ export default function CategoryListing() {
                     onClick={() => setShowSortDropdown(!showSortDropdown)}
                     className="flex items-center gap-2 px-4 py-2 border border-border rounded-lg hover:border-primary transition-colors"
                   >
-                    <span className="text-sm">Sort by: {SORT_OPTIONS.find((o) => o.value === sortBy)?.label}</span>
+                    <span className="text-sm">
+                      Sort by: {SORT_OPTIONS.find((o) => o.value === sortBy)?.label}
+                    </span>
                     <ChevronDown className="w-4 h-4" />
                   </button>
                   {showSortDropdown && (
@@ -284,11 +379,24 @@ export default function CategoryListing() {
                   {/* Load More */}
                   <div className="mt-12 text-center">
                     <p className="text-sm text-muted-foreground mb-4">
-                      Showing {sortedProducts.length} of {products.length} products
+                      Showing {products.length} of {totalCount} products
                     </p>
-                    <button className="bg-foreground text-background px-8 py-3 rounded-full font-medium hover:bg-foreground/90 transition-colors">
-                      Load More Products
-                    </button>
+                    {hasMoreProducts && (
+                      <button
+                        onClick={handleLoadMore}
+                        disabled={loadingMore}
+                        className="bg-foreground text-background px-8 py-3 rounded-full font-medium hover:bg-foreground/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
+                      >
+                        {loadingMore ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Loading...
+                          </>
+                        ) : (
+                          "Load More Products"
+                        )}
+                      </button>
+                    )}
                   </div>
                 </>
               ) : (

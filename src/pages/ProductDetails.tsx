@@ -146,54 +146,19 @@ export default function ProductDetails() {
             ]}
           />
 
-          {/* Product Section */}
+          {/* Product Section - Two Column Grid */}
           <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
-            {/* Image Gallery */}
-            <div className="flex gap-4">
-              {/* Thumbnails */}
-              <div className="hidden md:flex flex-col gap-3 w-20">
-                {images.map((image: any, index: number) => (
-                  <button
-                    key={index}
-                    onClick={() => setSelectedImage(index)}
-                    className={`aspect-[3/4] rounded-lg overflow-hidden border-2 transition-colors ${
-                      selectedImage === index ? "border-primary" : "border-transparent"
-                    }`}
-                  >
-                    <img
-                      src={image.image_url}
-                      alt={image.alt_text || product.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </button>
-                ))}
-              </div>
-
-              {/* Main Image */}
-              <div className="flex-1 relative">
-                {product.is_featured && (
-                  <span className="absolute top-4 left-4 z-10 badge-bestseller">BESTSELLER</span>
-                )}
-                <motion.div
-                  key={selectedImage}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="aspect-[3/4] rounded-xl overflow-hidden bg-secondary/30"
-                >
-                  <img
-                    src={images[selectedImage]?.image_url}
-                    alt={images[selectedImage]?.alt_text || product.name}
-                    className="w-full h-full object-cover"
-                  />
-                </motion.div>
-
-                {/* Mobile Thumbnails */}
-                <div className="flex gap-2 mt-4 md:hidden overflow-x-auto">
+            {/* LEFT COLUMN: Image Gallery + Reviews (on desktop) */}
+            <div className="flex flex-col">
+              {/* Image Gallery */}
+              <div className="flex gap-4">
+                {/* Thumbnails */}
+                <div className="hidden md:flex flex-col gap-3 w-20">
                   {images.map((image: any, index: number) => (
                     <button
                       key={index}
                       onClick={() => setSelectedImage(index)}
-                      className={`w-16 h-20 shrink-0 rounded-lg overflow-hidden border-2 transition-colors ${
+                      className={`aspect-[3/4] rounded-lg overflow-hidden border-2 transition-colors ${
                         selectedImage === index ? "border-primary" : "border-transparent"
                       }`}
                     >
@@ -205,10 +170,53 @@ export default function ProductDetails() {
                     </button>
                   ))}
                 </div>
+
+                {/* Main Image */}
+                <div className="flex-1 relative">
+                  {product.is_featured && (
+                    <span className="absolute top-4 left-4 z-10 badge-bestseller">BESTSELLER</span>
+                  )}
+                  <motion.div
+                    key={selectedImage}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="aspect-[3/4] rounded-xl overflow-hidden bg-secondary/30"
+                  >
+                    <img
+                      src={images[selectedImage]?.image_url}
+                      alt={images[selectedImage]?.alt_text || product.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </motion.div>
+
+                  {/* Mobile Thumbnails */}
+                  <div className="flex gap-2 mt-4 md:hidden overflow-x-auto">
+                    {images.map((image: any, index: number) => (
+                      <button
+                        key={index}
+                        onClick={() => setSelectedImage(index)}
+                        className={`w-16 h-20 shrink-0 rounded-lg overflow-hidden border-2 transition-colors ${
+                          selectedImage === index ? "border-primary" : "border-transparent"
+                        }`}
+                      >
+                        <img
+                          src={image.image_url}
+                          alt={image.alt_text || product.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Customer Reviews - Desktop Only (below image) */}
+              <div className="hidden lg:block mt-8">
+                <ReviewSection productId={product.id} productName={product.name} />
               </div>
             </div>
 
-            {/* Product Info */}
+            {/* RIGHT COLUMN: Product Info */}
             <div>
               <div className="flex items-start justify-between gap-4 mb-4">
                 <h1 className="font-heading text-2xl md:text-3xl font-semibold">{product.name}</h1>
@@ -461,8 +469,10 @@ export default function ProductDetails() {
             </div>
           </div>
 
-          {/* Customer Reviews */}
-          <ReviewSection productId={product.id} productName={product.name} />
+          {/* Customer Reviews - Mobile/Tablet Only */}
+          <div className="lg:hidden">
+            <ReviewSection productId={product.id} productName={product.name} />
+          </div>
 
           {/* Related Products */}
           {relatedProducts.length > 0 && (

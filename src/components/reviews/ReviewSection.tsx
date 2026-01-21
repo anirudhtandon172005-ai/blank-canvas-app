@@ -18,17 +18,15 @@ export default function ReviewSection({ productId, productName }: ReviewSectionP
   });
 
   return (
-    <section className="mt-16">
-      <h2 className="section-title mb-8">Customer Reviews</h2>
+    <section className="mt-8 lg:mt-0">
+      <h2 className="font-heading text-xl md:text-2xl font-semibold mb-6">Customer Reviews</h2>
 
-      <div className="grid lg:grid-cols-3 gap-8">
+      <div className="space-y-6">
         {/* Review Form */}
-        <div className="lg:col-span-1">
-          <ReviewForm productId={productId} productName={productName} />
-        </div>
+        <ReviewForm productId={productId} productName={productName} />
 
         {/* Reviews List */}
-        <div className="lg:col-span-2">
+        <div>
           {isLoading ? (
             <div className="space-y-4">
               {[1, 2, 3].map((i) => (

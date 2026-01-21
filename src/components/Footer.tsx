@@ -12,7 +12,7 @@ export default function Footer() {
               <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
                 <span className="text-primary-foreground text-sm font-bold">K</span>
               </div>
-              <span className="font-heading text-xl font-semibold">KALA MANDIR</span>
+              <span className="font-heading text-xl font-semibold">KALA ETHNIC</span>
             </Link>
             <p className="text-sm text-muted-foreground">
               Celebrating the timeless beauty of Indian ethnic wear. Handcrafted with love and tradition.
@@ -70,7 +70,7 @@ export default function Footer() {
         </div>
 
         <div className="mt-12 pt-8 border-t border-border flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
-          <p>© 2024 Kala Mandir. All rights reserved.</p>
+          <p>© 2024 Kala Ethnic. All rights reserved.</p>
           <div className="flex gap-6">
             <a href="#" className="hover:text-primary transition-colors">Privacy Policy</a>
             <a href="#" className="hover:text-primary transition-colors">Terms of Service</a>

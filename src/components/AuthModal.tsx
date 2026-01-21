@@ -145,7 +145,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
               <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
                 <span className="text-primary-foreground font-bold">K</span>
               </div>
-              <span className="font-heading text-xl font-semibold">Kala Mandir</span>
+              <span className="font-heading text-xl font-semibold">Kala Ethnic</span>
             </div>
             <button
               onClick={handleClose}

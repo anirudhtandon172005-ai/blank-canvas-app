@@ -94,7 +94,7 @@ export default function Navbar() {
           <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-bold">
             K
           </div>
-          <span className="font-heading text-lg">KALA MANDIR</span>
+          <span className="font-heading text-lg">KALA ETHNIC</span>
         </Link>
 
         {/* Desktop Navigation - Dynamic Categories */}

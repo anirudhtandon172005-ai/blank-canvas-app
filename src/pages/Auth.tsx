@@ -121,7 +121,7 @@ export default function Auth() {
             <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
               <span className="text-primary-foreground font-bold">K</span>
             </div>
-            <span className="text-2xl font-semibold">Kala Mandir</span>
+            <span className="text-2xl font-semibold">Kala Ethnic</span>
           </Link>
 
           <AnimatePresence mode="wait">

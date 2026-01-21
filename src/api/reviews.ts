@@ -16,13 +16,13 @@ export interface ProductReview {
  */
 export async function getProductReviews(productId: string): Promise<ProductReview[]> {
   const { data, error } = await supabase
-    .from("product_reviews")
+    .from("product_reviews" as any)
     .select("*")
     .eq("product_id", productId)
     .order("created_at", { ascending: false });
 
   if (error) throw error;
-  return data || [];
+  return (data || []) as unknown as ProductReview[];
 }
 
 /**
@@ -37,11 +37,11 @@ export async function createReview(review: {
   review_text: string;
 }): Promise<ProductReview> {
   const { data, error } = await supabase
-    .from("product_reviews")
+    .from("product_reviews" as any)
     .insert(review)
     .select()
     .single();
 
   if (error) throw error;
-  return data;
+  return data as unknown as ProductReview;
 }

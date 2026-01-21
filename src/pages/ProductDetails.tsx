@@ -8,6 +8,7 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 import ProductCard from "@/components/ProductCard";
 import Loader from "@/components/Loader";
 import { getProductBySlug, getAllProducts } from "@/api/products";
+import ReviewSection from "@/components/reviews/ReviewSection";
 import { useCart } from "@/hooks/useCart";
 import { useWishlist } from "@/hooks/useWishlist";
 import { useAuthContext } from "@/contexts/AuthContext";
@@ -459,6 +460,9 @@ export default function ProductDetails() {
               </div>
             </div>
           </div>
+
+          {/* Customer Reviews */}
+          <ReviewSection productId={product.id} productName={product.name} />
 
           {/* Related Products */}
           {relatedProducts.length > 0 && (

@@ -7,8 +7,8 @@ interface ReviewCardProps {
 }
 
 export default function ReviewCard({ review }: ReviewCardProps) {
-  // Use profile_full_name (from join) if available, otherwise fall back to "Verified Customer"
-  const displayName = review.profile_full_name || "Verified Customer";
+  // Use user_name directly from product_reviews table
+  const displayName = review.user_name || "Verified Customer";
 
   return (
     <div className="border border-border rounded-xl p-4 md:p-5">

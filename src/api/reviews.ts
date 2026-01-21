@@ -14,25 +14,18 @@ export interface ProductReview {
 }
 
 /**
- * Get all reviews for a product with profile names
+ * Get all reviews for a product
  */
 export async function getProductReviews(productId: string): Promise<ProductReview[]> {
   const { data, error } = await supabase
     .from("product_reviews" as any)
-    .select(`
-      *,
-      profiles:user_id (full_name)
-    `)
+    .select("*")
     .eq("product_id", productId)
     .order("created_at", { ascending: false });
 
   if (error) throw error;
   
-  // Map the joined data to include profile_full_name
-  return ((data || []) as any[]).map((review) => ({
-    ...review,
-    profile_full_name: review.profiles?.full_name || null,
-  })) as ProductReview[];
+  return (data || []) as unknown as ProductReview[];
 }
 
 /**

@@ -9,48 +9,20 @@ export interface ProductReview {
   rating: number;
   review_text: string;
   created_at: string;
-  profile_full_name?: string | null;
 }
 
 /**
- * Get all reviews for a product with profile full_name
+ * Get all reviews for a product
  */
 export async function getProductReviews(productId: string): Promise<ProductReview[]> {
   const { data, error } = await supabase
     .from("product_reviews" as any)
-    .select(`
-      *,
-      profiles:user_id (
-        full_name
-      )
-    `)
+    .select("*")
     .eq("product_id", productId)
     .order("created_at", { ascending: false });
 
   if (error) throw error;
-  
-  // Map the joined profile data to a flat structure
-  return ((data || []) as any[]).map((review) => ({
-    ...review,
-    profile_full_name: review.profiles?.full_name || null,
-    profiles: undefined, // Remove nested object
-  })) as ProductReview[];
-}
-
-/**
- * Get user's profile full_name
- */
-export async function getUserProfileName(userId: string): Promise<string> {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("full_name")
-    .eq("id", userId)
-    .single();
-
-  if (error || !data?.full_name) {
-    return "Verified Customer";
-  }
-  return data.full_name;
+  return (data || []) as unknown as ProductReview[];
 }
 
 /**

@@ -367,50 +367,6 @@ export type Database = {
           },
         ]
       }
-      product_reviews: {
-        Row: {
-          created_at: string
-          id: string
-          product_id: string
-          product_name: string
-          rating: number
-          review_text: string
-          updated_at: string
-          user_id: string
-          user_name: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          product_id: string
-          product_name: string
-          rating: number
-          review_text: string
-          updated_at?: string
-          user_id: string
-          user_name: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          product_id?: string
-          product_name?: string
-          rating?: number
-          review_text?: string
-          updated_at?: string
-          user_id?: string
-          user_name?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "product_reviews_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       product_variants: {
         Row: {
           color: string

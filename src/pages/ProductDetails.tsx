@@ -146,8 +146,8 @@ export default function ProductDetails() {
             ]}
           />
 
-          {/* Product Section - 3 columns on desktop: images | info | reviews */}
-          <div className="grid lg:grid-cols-[1fr_1fr_380px] gap-8 lg:gap-10">
+          {/* Product Section */}
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
             {/* Image Gallery */}
             <div className="flex gap-4">
               {/* Thumbnails */}
@@ -459,17 +459,10 @@ export default function ProductDetails() {
                 </div>
               </div>
             </div>
-
-            {/* Customer Reviews - Desktop only (3rd column) */}
-            <div className="hidden lg:block">
-              <ReviewSection productId={product.id} productName={product.name} />
-            </div>
           </div>
 
-          {/* Customer Reviews - Mobile/Tablet only (below content) */}
-          <div className="lg:hidden">
-            <ReviewSection productId={product.id} productName={product.name} />
-          </div>
+          {/* Customer Reviews */}
+          <ReviewSection productId={product.id} productName={product.name} />
 
           {/* Related Products */}
           {relatedProducts.length > 0 && (

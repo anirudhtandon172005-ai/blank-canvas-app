@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createReview } from "@/api/reviews";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createReview, getUserProfileName } from "@/api/reviews";
 import { useAuthContext } from "@/contexts/AuthContext";
 import StarRating from "./StarRating";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,13 @@ export default function ReviewForm({ productId, productName }: ReviewFormProps) 
   
   const [rating, setRating] = useState(0);
   const [reviewText, setReviewText] = useState("");
+
+  // Fetch user's profile name
+  const { data: profileName } = useQuery({
+    queryKey: ["user-profile-name", user?.id],
+    queryFn: () => getUserProfileName(user!.id),
+    enabled: !!user?.id,
+  });
 
   const mutation = useMutation({
     mutationFn: createReview,
@@ -75,7 +82,8 @@ export default function ReviewForm({ productId, productName }: ReviewFormProps) 
       return;
     }
 
-    const userName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Anonymous";
+    // Use profile name, never email - fallback to "Verified Customer"
+    const userName = profileName || "Verified Customer";
 
     mutation.mutate({
       product_id: productId,

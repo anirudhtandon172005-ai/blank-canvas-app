@@ -134,6 +134,13 @@ export default function Navbar() {
               setSearchQuery(e.target.value);
               setOpen(true);
             }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && searchQuery.trim()) {
+                setOpen(false);
+                setSearchQuery("");
+                navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+              }
+            }}
             placeholder="Search sarees, lehengas & more..."
             className="w-full pl-10 pr-4 py-2 rounded-full bg-secondary text-foreground placeholder:text-muted-foreground"
           />
@@ -200,6 +207,14 @@ export default function Navbar() {
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
                     setOpen(true);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && searchQuery.trim()) {
+                      setOpen(false);
+                      setMobileMenuOpen(false);
+                      setSearchQuery("");
+                      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+                    }
                   }}
                   placeholder="Search products..."
                   className="w-full pl-10 pr-4 py-2 rounded-full bg-secondary text-foreground placeholder:text-muted-foreground"

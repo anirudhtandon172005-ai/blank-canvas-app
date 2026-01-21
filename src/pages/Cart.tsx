@@ -86,7 +86,7 @@ export default function Cart() {
                 const price = item.product?.sale_price || item.product?.base_price || 0;
                 const adjustment = item.variant?.price_adjustment || 0;
                 const itemPrice = price + adjustment;
-                const primaryImage = item.product?.images?.find((img: any) => img.is_primary) || item.product?.images?.[0];
+                const primaryImage = item.product?.product_images?.find((img: any) => img.is_primary) || item.product?.product_images?.[0];
 
                 return (
                   <motion.div

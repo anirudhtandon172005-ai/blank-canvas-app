@@ -430,7 +430,7 @@ export default function Checkout() {
                       <div key={item.id} className="flex gap-3">
                         <div className="w-12 h-16 rounded bg-secondary/30 overflow-hidden shrink-0">
                           <img
-                            src={item.product?.images?.[0]?.image_url || "/placeholder.svg"}
+                            src={item.product?.product_images?.find((img: any) => img.is_primary)?.image_url || item.product?.product_images?.[0]?.image_url || "/placeholder.svg"}
                             className="w-full h-full object-cover"
                           />
                         </div>

@@ -72,7 +72,7 @@ export default function Login() {
             <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
               <span className="text-primary-foreground font-bold">K</span>
             </div>
-            <span className="font-heading text-2xl font-semibold text-foreground">Kala Mandir</span>
+            <span className="font-heading text-2xl font-semibold text-foreground">Kala Ethnic</span>
           </Link>
 
           <form onSubmit={handleSubmit} className="space-y-6">

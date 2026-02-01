@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
-import Loader from "@/components/Loader";
+import LuxuryLoader from "@/components/LuxuryLoader";
 import { getFeaturedProducts, getCategories } from "@/api/products";
 
 export default function Home() {
@@ -99,7 +99,7 @@ export default function Home() {
             </div>
 
             {loading ? (
-              <Loader />
+              <LuxuryLoader />
             ) : products.length > 0 ? (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
                 {products.slice(0, 8).map((product, index) => (

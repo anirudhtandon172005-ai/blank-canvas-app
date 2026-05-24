@@ -16,6 +16,7 @@ import Profile from "./pages/Profile";
 import Orders from "./pages/Orders";
 import OrderDetails from "./pages/OrderDetails";
 import AdminOrders from "./pages/AdminOrders";
+import AdminReturns from "./pages/AdminReturns";
 import Returns from "./pages/Returns";
 import ReturnRequest from "./pages/ReturnRequest";
 import SearchPage from "./pages/SearchPage";
@@ -56,6 +57,14 @@ const App = () => (
               element={
                 <AdminRoute>
                   <AdminOrders />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/returns"
+              element={
+                <AdminRoute>
+                  <AdminReturns />
                 </AdminRoute>
               }
             />

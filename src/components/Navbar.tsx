@@ -147,12 +147,20 @@ export default function Navbar() {
             ))
           )}
           {isAdmin && (
-            <Link
-              to="/admin/orders"
-              className="text-sm font-medium hover:text-primary transition-colors"
-            >
-              Admin
-            </Link>
+            <>
+              <Link
+                to="/admin/orders"
+                className="text-sm font-medium hover:text-primary transition-colors"
+              >
+                Admin Orders
+              </Link>
+              <Link
+                to="/admin/returns"
+                className="text-sm font-medium hover:text-primary transition-colors"
+              >
+                Admin Returns
+              </Link>
+            </>
           )}
         </nav>
 
@@ -287,15 +295,26 @@ export default function Navbar() {
               )}
 
               {isAdmin && (
-                <button
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    navigate("/admin/orders");
-                  }}
-                  className="text-left py-3 px-4 rounded-lg hover:bg-secondary transition-colors font-medium"
-                >
-                  Admin
-                </button>
+                <>
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      navigate("/admin/orders");
+                    }}
+                    className="text-left py-3 px-4 rounded-lg hover:bg-secondary transition-colors font-medium"
+                  >
+                    Admin Orders
+                  </button>
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      navigate("/admin/returns");
+                    }}
+                    className="text-left py-3 px-4 rounded-lg hover:bg-secondary transition-colors font-medium"
+                  >
+                    Admin Returns
+                  </button>
+                </>
               )}
             </nav>
           </motion.div>

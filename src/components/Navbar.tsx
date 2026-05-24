@@ -8,6 +8,7 @@ import { useAuthContext } from "@/contexts/AuthContext";
 import { useCart } from "@/hooks/useCart";
 import { useDebounce } from "@/hooks/useDebounce";
 import { searchProducts } from "@/api/search";
+import { isCurrentUserAdmin } from "@/api/adminOrders";
 import { supabase } from "@/integrations/supabase/client";
 import SearchSuggestions from "./SearchSuggestions";
 import ThemeToggle from "./ThemeToggle";
@@ -27,6 +28,7 @@ export default function Navbar() {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const debounced = useDebounce(searchQuery, 300);
   const ref = useRef<HTMLDivElement>(null);
@@ -53,6 +55,27 @@ export default function Navbar() {
   });
 
   const categories = categoriesQuery.data || [];
+
+  useEffect(() => {
+    let active = true;
+
+    if (!user) {
+      setIsAdmin(false);
+      return;
+    }
+
+    isCurrentUserAdmin()
+      .then((allowed) => {
+        if (active) setIsAdmin(allowed);
+      })
+      .catch(() => {
+        if (active) setIsAdmin(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [user]);
 
   useEffect(() => {
     if (!debounced.trim()) {
@@ -122,6 +145,14 @@ export default function Navbar() {
                 {category.name}
               </Link>
             ))
+          )}
+          {isAdmin && (
+            <Link
+              to="/admin/orders"
+              className="text-sm font-medium hover:text-primary transition-colors"
+            >
+              Admin
+            </Link>
           )}
         </nav>
 
@@ -253,6 +284,18 @@ export default function Navbar() {
                     {category.name}
                   </button>
                 ))
+              )}
+
+              {isAdmin && (
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    navigate("/admin/orders");
+                  }}
+                  className="text-left py-3 px-4 rounded-lg hover:bg-secondary transition-colors font-medium"
+                >
+                  Admin
+                </button>
               )}
             </nav>
           </motion.div>

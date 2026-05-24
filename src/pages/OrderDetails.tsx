@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { getOrderDetails } from "@/api/orders";
+import { ReturnEligibilityResult, checkReturnEligibility } from "@/api/returns";
 import { toast } from "@/hooks/use-toast";
 import Loader from "@/components/Loader";
 import { format } from "date-fns";
@@ -36,6 +37,7 @@ export default function OrderDetails() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuthContext();
   const [order, setOrder] = useState<any>(null);
+  const [returnEligibility, setReturnEligibility] = useState<ReturnEligibilityResult | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -62,6 +64,13 @@ export default function OrderDetails() {
         return;
       }
       setOrder(data);
+      try {
+        const eligibility = await checkReturnEligibility(data.id);
+        setReturnEligibility(eligibility);
+      } catch (eligibilityError) {
+        console.error("Error checking return eligibility:", eligibilityError);
+        setReturnEligibility(null);
+      }
     } catch (error) {
       console.error("Error fetching order:", error);
       navigate("/orders");
@@ -89,6 +98,14 @@ export default function OrderDetails() {
 
   const currentStatusIndex = getStatusIndex(order.status);
   const isCancelled = order.status === "cancelled";
+  const existingRequest = returnEligibility?.existingRequest;
+  const returnStatusLabel = existingRequest?.status
+    ? existingRequest.status.replace(/_/g, " ").replace(/\b\w/g, (letter: string) => letter.toUpperCase())
+    : null;
+  const showReturnWindowClosed =
+    order.status === "delivered" &&
+    returnEligibility?.reason === "Return window closed. Returns are allowed within 7 days of delivery.";
+  const canRequestReturn = Boolean(returnEligibility?.eligible && order.status === "delivered");
 
   return (
     <div className="min-h-screen bg-background">
@@ -119,14 +136,6 @@ export default function OrderDetails() {
                 Placed on {format(new Date(order.created_at), "dd MMMM yyyy, hh:mm a")}
               </p>
             </div>
-            {order.status === "delivered" && (
-              <Link to={`/returns?orderId=${order.id}`}>
-                <Button variant="outline">
-                  <RotateCcw className="w-4 h-4 mr-2" />
-                  Request Return
-                </Button>
-              </Link>
-            )}
           </div>
 
           {/* Order Status Timeline */}
@@ -298,6 +307,42 @@ export default function OrderDetails() {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Return / Refund */}
+              {order.status === "delivered" && returnEligibility && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="font-heading text-lg">Return / Refund</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {existingRequest ? (
+                      <>
+                        <p className="font-medium">Return request submitted</p>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground">Status:</span>
+                          <Badge variant="secondary">{returnStatusLabel}</Badge>
+                        </div>
+                        <Button variant="outline" asChild>
+                          <Link to="/returns">View Return Request</Link>
+                        </Button>
+                      </>
+                    ) : showReturnWindowClosed ? (
+                      <p className="text-sm text-muted-foreground">
+                        Return window closed. Returns are allowed within 7 days of delivery.
+                      </p>
+                    ) : canRequestReturn ? (
+                      <Button variant="outline" asChild>
+                        <Link to={`/return-request/${order.id}`}>
+                          <RotateCcw className="w-4 h-4 mr-2" />
+                          Request Return / Refund
+                        </Link>
+                      </Button>
+                    ) : returnEligibility.reason ? (
+                      <p className="text-sm text-muted-foreground">{returnEligibility.reason}</p>
+                    ) : null}
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Notes */}
               {order.notes && !order.notes.includes("RETURN REQUEST") && (

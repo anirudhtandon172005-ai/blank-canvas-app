@@ -13,6 +13,7 @@ export default function PaymentSuccess() {
 
   const orderId = searchParams.get("orderId");
   const transactionId = searchParams.get("tx");
+  const isCOD = transactionId === "COD";
 
   useEffect(() => {
     // Animate content after checkmark animation
@@ -83,10 +84,12 @@ export default function PaymentSuccess() {
           >
             <div>
               <h1 className="text-3xl font-heading font-bold text-foreground mb-2">
-                Payment Successful!
+                {isCOD ? "Order Placed Successfully" : "Payment Successful"}
               </h1>
               <p className="text-muted-foreground">
-                Thank you for your order. Your payment has been processed.
+                {isCOD
+                  ? "Payment pending: Cash on Delivery"
+                  : "Thank you for your order. Your payment has been processed."}
               </p>
             </div>
 
@@ -108,8 +111,8 @@ export default function PaymentSuccess() {
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground uppercase tracking-wide">Transaction ID</p>
-                  <p className="font-mono font-medium text-foreground">
-                    {transactionId === "COD" ? "Cash on Delivery" : transactionId?.slice(0, 12) || "N/A"}
+                  <p className="font-mono font-medium text-foreground break-all">
+                    {isCOD ? "Payment pending: Cash on Delivery" : transactionId || "N/A"}
                   </p>
                 </div>
               </div>

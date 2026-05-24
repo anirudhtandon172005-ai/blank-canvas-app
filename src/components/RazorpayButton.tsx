@@ -43,11 +43,13 @@ export interface RazorpaySuccessResponse {
 export interface VerifiedPaymentResponse {
   verified: boolean;
   payment_id: string;
-  order_id: string;
+  internal_order_id: string;
 }
 
 interface RazorpayButtonProps {
   amount: number; // Amount in INR (rupees)
+  internalOrderId?: string;
+  onCreateInternalOrder?: () => Promise<string>;
   customerName?: string;
   customerEmail?: string;
   customerPhone?: string;
@@ -58,6 +60,8 @@ interface RazorpayButtonProps {
 
 export default function RazorpayButton({
   amount,
+  internalOrderId,
+  onCreateInternalOrder,
   customerName,
   customerEmail,
   customerPhone,
@@ -67,10 +71,10 @@ export default function RazorpayButton({
 }: RazorpayButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
 
-  const createOrder = async (): Promise<{ id: string; amount: number } | null> => {
+  const createOrder = async (orderId: string): Promise<{ id: string; amount: number; currency: string } | null> => {
     try {
       const { data, error } = await supabase.functions.invoke('razorpay-create-order', {
-        body: { amount },
+        body: { internal_order_id: orderId },
       });
 
       if (error) {
@@ -85,32 +89,6 @@ export default function RazorpayButton({
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Failed to create order');
       console.error('Order creation error:', error);
-      throw error;
-    }
-  };
-
-  const verifyPayment = async (response: RazorpaySuccessResponse): Promise<VerifiedPaymentResponse> => {
-    try {
-      const { data, error } = await supabase.functions.invoke('razorpay-verify-payment', {
-        body: {
-          razorpay_order_id: response.razorpay_order_id,
-          razorpay_payment_id: response.razorpay_payment_id,
-          razorpay_signature: response.razorpay_signature,
-        },
-      });
-
-      if (error) {
-        throw new Error(error.message || 'Payment verification failed');
-      }
-
-      if (!data?.verified) {
-        throw new Error(data?.error || 'Payment verification failed');
-      }
-
-      return data;
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error('Payment verification failed');
-      console.error('Payment verification error:', error);
       throw error;
     }
   };
@@ -136,8 +114,14 @@ export default function RazorpayButton({
     setIsLoading(true);
 
     try {
-      // Step 1: Create order on backend
-      const order = await createOrder();
+      const orderId = internalOrderId ?? await onCreateInternalOrder?.();
+
+      if (!orderId) {
+        throw new Error("Internal order could not be created");
+      }
+
+      // Step 1: Create Razorpay order on backend from the internal order id.
+      const order = await createOrder(orderId);
       if (!order) {
         throw new Error('Failed to create order');
       }
@@ -165,7 +149,24 @@ export default function RazorpayButton({
           
           try {
             // Step 3: Verify payment on backend
-            const verifiedPayment = await verifyPayment(response);
+            const { data, error } = await supabase.functions.invoke('razorpay-verify-payment', {
+              body: {
+                internal_order_id: orderId,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+              },
+            });
+
+            if (error) {
+              throw new Error(error.message || 'Payment verification failed');
+            }
+
+            if (!data?.verified) {
+              throw new Error(data?.error || 'Payment verification failed');
+            }
+
+            const verifiedPayment = data as VerifiedPaymentResponse;
             console.log("Payment verified:", verifiedPayment);
             setIsLoading(false);
             onSuccess(verifiedPayment);
@@ -198,7 +199,7 @@ export default function RazorpayButton({
       setIsLoading(false);
       onError?.(error);
     }
-  }, [amount, customerName, customerEmail, customerPhone, onSuccess, onError]);
+  }, [customerName, customerEmail, customerPhone, internalOrderId, onCreateInternalOrder, onSuccess, onError]);
 
   if (disabled) {
     return (

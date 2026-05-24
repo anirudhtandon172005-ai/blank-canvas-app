@@ -1,4 +1,9 @@
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
+
+type OrderInsertPayload = Database["public"]["Tables"]["orders"]["Insert"] & {
+  payment_method: "cod" | "razorpay";
+};
 
 interface PlaceOrderData {
   addressId?: string;
@@ -12,10 +17,18 @@ interface PlaceOrderData {
   notes?: string;
 }
 
+interface PlaceOrderOptions {
+  paymentMethod?: "cod" | "razorpay";
+  clearCart?: boolean;
+}
+
 /**
  * PLACE ORDER
  */
-export async function placeOrder(orderData: PlaceOrderData) {
+export async function placeOrder(orderData: PlaceOrderData, options: PlaceOrderOptions = {}) {
+  const paymentMethod = options.paymentMethod ?? "cod";
+  const shouldClearCart = options.clearCart ?? paymentMethod === "cod";
+
   // Get current user
   const {
     data: { user },
@@ -59,29 +72,32 @@ export async function placeOrder(orderData: PlaceOrderData) {
     "KM" + Date.now().toString(36).toUpperCase() + Math.random().toString(36).substring(2, 6).toUpperCase();
 
   // Insert into orders
+  const orderPayload: OrderInsertPayload = {
+    user_id: user.id,
+    order_number: orderNumber,
+    subtotal,
+    shipping_cost: shippingCost,
+    tax_amount: taxAmount,
+    total_amount: totalAmount,
+
+    shipping_address_id: orderData.addressId || null,
+    shipping_name: orderData.shippingName,
+    shipping_phone: orderData.shippingPhone,
+    shipping_address: orderData.shippingAddress,
+    shipping_city: orderData.shippingCity,
+    shipping_state: orderData.shippingState,
+    shipping_postal_code: orderData.shippingPostalCode,
+    shipping_country: orderData.shippingCountry || "India",
+
+    notes: orderData.notes ?? null,
+    status: "pending",
+    payment_status: "pending",
+    payment_method: paymentMethod,
+  };
+
   const { data: order, error: orderErr } = await supabase
     .from("orders")
-    .insert({
-      user_id: user.id,
-      order_number: orderNumber,
-      subtotal,
-      shipping_cost: shippingCost,
-      tax_amount: taxAmount,
-      total_amount: totalAmount,
-
-      shipping_address_id: orderData.addressId || null,
-      shipping_name: orderData.shippingName,
-      shipping_phone: orderData.shippingPhone,
-      shipping_address: orderData.shippingAddress,
-      shipping_city: orderData.shippingCity,
-      shipping_state: orderData.shippingState,
-      shipping_postal_code: orderData.shippingPostalCode,
-      shipping_country: orderData.shippingCountry || "India",
-
-      notes: orderData.notes ?? null,
-      status: "pending",
-      payment_status: "pending",
-    })
+    .insert(orderPayload)
     .select()
     .single();
 
@@ -106,8 +122,9 @@ export async function placeOrder(orderData: PlaceOrderData) {
 
   if (oiErr) throw oiErr;
 
-  // Clear the cart
-  await supabase.from("cart_items").delete().eq("cart_id", cart.id);
+  if (shouldClearCart) {
+    await supabase.from("cart_items").delete().eq("cart_id", cart.id);
+  }
 
   return order;
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { MapPin, Plus, Check, CreditCard, Banknote, Truck, ShieldCheck } from "lucide-react";
 
@@ -29,9 +29,13 @@ interface Address {
   label?: string;
 }
 
+interface ProductImage {
+  image_url?: string;
+  is_primary?: boolean | null;
+}
+
 export default function Checkout() {
   const navigate = useNavigate();
-  const location = useLocation();
   const { user, loading: authLoading, isAuthenticated } = useAuthContext();
   const { cart, loading: cartLoading, cartTotal } = useCart();
 
@@ -42,6 +46,7 @@ export default function Checkout() {
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "online">("cod");
   const [loading, setLoading] = useState(true);
   const [placing, setPlacing] = useState(false);
+  const [onlineOrderId, setOnlineOrderId] = useState<string | null>(null);
 
   const [newAddress, setNewAddress] = useState({
     full_name: "",
@@ -96,6 +101,10 @@ export default function Checkout() {
   const taxAmount = cartTotal * 0.05;
   const totalAmount = cartTotal + shippingCost + taxAmount;
 
+  useEffect(() => {
+    setOnlineOrderId(null);
+  }, [selectedAddress?.id]);
+
   const handleAddAddress = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -141,31 +150,35 @@ export default function Checkout() {
         title: "Address added",
         description: "Your address has been saved",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to add address";
       toast({
         title: "Error",
-        description: error.message || "Failed to add address",
+        description: errorMessage,
         variant: "destructive",
       });
     }
   };
 
-  // Helper to create order and redirect
+  // Helper to create a COD order and redirect
   const createOrderAndRedirect = async (transactionId: string) => {
     if (!selectedAddress) return;
 
     setPlacing(true);
 
     try {
-      const order = await placeOrder({
-        addressId: selectedAddress.id,
-        shippingName: selectedAddress.full_name,
-        shippingPhone: selectedAddress.phone,
-        shippingAddress: `${selectedAddress.address_line1}${selectedAddress.address_line2 ? ", " + selectedAddress.address_line2 : ""}`,
-        shippingCity: selectedAddress.city,
-        shippingState: selectedAddress.state,
-        shippingPostalCode: selectedAddress.postal_code,
-      });
+      const order = await placeOrder(
+        {
+          addressId: selectedAddress.id,
+          shippingName: selectedAddress.full_name,
+          shippingPhone: selectedAddress.phone,
+          shippingAddress: `${selectedAddress.address_line1}${selectedAddress.address_line2 ? ", " + selectedAddress.address_line2 : ""}`,
+          shippingCity: selectedAddress.city,
+          shippingState: selectedAddress.state,
+          shippingPostalCode: selectedAddress.postal_code,
+        },
+        { paymentMethod: "cod", clearCart: true },
+      );
 
       toast({
         title: "Order placed!",
@@ -186,6 +199,30 @@ export default function Checkout() {
     }
   };
 
+  const createPendingOnlineOrder = async () => {
+    if (onlineOrderId) return onlineOrderId;
+
+    if (!selectedAddress) {
+      throw new Error("Please select a delivery address");
+    }
+
+    const order = await placeOrder(
+      {
+        addressId: selectedAddress.id,
+        shippingName: selectedAddress.full_name,
+        shippingPhone: selectedAddress.phone,
+        shippingAddress: `${selectedAddress.address_line1}${selectedAddress.address_line2 ? ", " + selectedAddress.address_line2 : ""}`,
+        shippingCity: selectedAddress.city,
+        shippingState: selectedAddress.state,
+        shippingPostalCode: selectedAddress.postal_code,
+      },
+      { paymentMethod: "razorpay", clearCart: false },
+    );
+
+    setOnlineOrderId(order.id);
+    return order.id;
+  };
+
   // Handle COD payment
   const handleCODPayment = async () => {
     if (!selectedAddress) {
@@ -202,11 +239,12 @@ export default function Checkout() {
 
   // Handle Razorpay success (after backend verification)
   const handleRazorpaySuccess = async (response: VerifiedPaymentResponse) => {
-    if (!selectedAddress) return;
+    toast({
+      title: "Payment received",
+      description: "Your order has been confirmed",
+    });
 
-    // Payment is already verified by backend, proceed with order
-    const transactionId = response.payment_id;
-    await createOrderAndRedirect(transactionId);
+    navigate(`/payment-success?orderId=${response.internal_order_id}&tx=${response.payment_id}`);
   };
 
   // Handle Razorpay error
@@ -430,7 +468,7 @@ export default function Checkout() {
                       <div key={item.id} className="flex gap-3">
                         <div className="w-12 h-16 rounded bg-secondary/30 overflow-hidden shrink-0">
                           <img
-                            src={item.product?.product_images?.find((img: any) => img.is_primary)?.image_url || item.product?.product_images?.[0]?.image_url || "/placeholder.svg"}
+                            src={item.product?.product_images?.find((img: ProductImage) => img.is_primary)?.image_url || item.product?.product_images?.[0]?.image_url || "/placeholder.svg"}
                             className="w-full h-full object-cover"
                           />
                         </div>
@@ -493,7 +531,10 @@ export default function Checkout() {
                     ) : (
                       <RazorpayButton
                         amount={totalAmount}
+                        internalOrderId={onlineOrderId ?? undefined}
+                        onCreateInternalOrder={createPendingOnlineOrder}
                         customerName={selectedAddress?.full_name}
+                        customerEmail={user?.email}
                         customerPhone={selectedAddress?.phone}
                         onSuccess={handleRazorpaySuccess}
                         onError={handleRazorpayError}

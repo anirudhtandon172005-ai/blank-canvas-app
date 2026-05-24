@@ -5,6 +5,19 @@ type OrderInsertPayload = Database["public"]["Tables"]["orders"]["Insert"] & {
   payment_method: "cod" | "razorpay";
 };
 
+type DbError = { message: string };
+type DbResult<T> = { data: T | null; error: DbError | null };
+type QueryBuilder<T> = PromiseLike<DbResult<T>> & {
+  select: (columns?: string) => QueryBuilder<T>;
+  eq: (column: string, value: unknown) => QueryBuilder<T>;
+  order: (column: string, options?: { ascending?: boolean }) => QueryBuilder<T>;
+};
+type UntypedSupabase = {
+  from: <T = unknown>(table: string) => QueryBuilder<T>;
+};
+
+const db = supabase as unknown as UntypedSupabase;
+
 interface PlaceOrderData {
   addressId?: string;
   shippingName: string;
@@ -182,7 +195,23 @@ export async function getOrderDetails(orderId: string) {
 
   if (error) throw error;
 
-  return data;
+  if (!data) return data;
+
+  const { data: shipments, error: shipmentError } = await db
+    .from("shipments")
+    .select("*")
+    .eq("order_id", orderId)
+    .order("created_at", { ascending: false });
+
+  if (shipmentError) throw shipmentError;
+
+  const shipmentRows = Array.isArray(shipments) ? shipments : [];
+
+  return {
+    ...data,
+    shipments: shipmentRows,
+    shipment: shipmentRows[0] || null,
+  };
 }
 
 /**

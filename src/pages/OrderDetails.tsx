@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Package, Truck, CheckCircle, XCircle, Clock, MapPin, ArrowLeft, RotateCcw } from "lucide-react";
+import { Package, Truck, CheckCircle, XCircle, Clock, MapPin, ArrowLeft, RotateCcw, ExternalLink } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -79,6 +79,11 @@ export default function OrderDetails() {
     return primaryImage?.image_url || item.product?.images?.[0]?.image_url || "/placeholder.svg";
   };
 
+  const formatOptionalDate = (value?: string | null) => {
+    if (!value) return "N/A";
+    return format(new Date(value), "dd MMM yyyy");
+  };
+
   if (authLoading || loading) {
     return <Loader />;
   }
@@ -89,6 +94,7 @@ export default function OrderDetails() {
 
   const currentStatusIndex = getStatusIndex(order.status);
   const isCancelled = order.status === "cancelled";
+  const shipment = order.shipment || order.shipments?.[0];
 
   return (
     <div className="min-h-screen bg-background">
@@ -258,6 +264,44 @@ export default function OrderDetails() {
                   <p className="text-sm text-muted-foreground mt-2">{order.shipping_phone}</p>
                 </CardContent>
               </Card>
+
+              {/* Shipment Tracking */}
+              {shipment && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="font-heading text-lg flex items-center gap-2">
+                      <Truck className="w-4 h-4" />
+                      Shipment Tracking
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3 text-sm">
+                    <div className="flex justify-between gap-4">
+                      <span className="text-muted-foreground">Courier</span>
+                      <span className="text-right">{shipment.courier_name || "N/A"}</span>
+                    </div>
+                    <div className="flex justify-between gap-4">
+                      <span className="text-muted-foreground">Tracking Number / AWB</span>
+                      <span className="text-right font-mono">{shipment.awb_code || "N/A"}</span>
+                    </div>
+                    <div className="flex justify-between gap-4">
+                      <span className="text-muted-foreground">Estimated Delivery</span>
+                      <span className="text-right">{formatOptionalDate(shipment.estimated_delivery)}</span>
+                    </div>
+                    <div className="flex justify-between gap-4">
+                      <span className="text-muted-foreground">Shipment Status</span>
+                      <span className="text-right capitalize">{shipment.status?.replace(/_/g, " ") || "N/A"}</span>
+                    </div>
+                    {shipment.tracking_url && (
+                      <Button variant="outline" className="w-full" asChild>
+                        <a href={shipment.tracking_url} target="_blank" rel="noreferrer">
+                          Track Shipment
+                          <ExternalLink className="w-4 h-4" />
+                        </a>
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Payment Summary */}
               <Card>

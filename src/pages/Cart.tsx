@@ -9,6 +9,7 @@ import { useCart } from "@/hooks/useCart";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { validateCartItemStocks } from "@/api/cart";
+import { getProfileCompletionStatus } from "@/api/profileCompletion";
 
 export default function Cart() {
   const navigate = useNavigate();
@@ -58,6 +59,30 @@ export default function Cart() {
   const hasStockIssues = cartStockIssues.length > 0;
 
   const handleProceedToCheckout = async () => {
+    let status;
+
+    try {
+      status = await getProfileCompletionStatus();
+    } catch (error) {
+      console.error("Failed to check profile completion from cart:", error);
+      toast({
+        title: "Unable to continue",
+        description: "Failed to check profile completion. Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!status.isComplete) {
+      toast({
+        title: "Complete your profile",
+        description: "Please complete your profile before checkout.",
+        variant: "destructive",
+      });
+      navigate("/profile?completeProfile=1");
+      return;
+    }
+
     try {
       const stockCheck = await validateCartItemStocks(
         cartItems.map((item: any) => ({

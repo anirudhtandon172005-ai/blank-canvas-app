@@ -213,3 +213,130 @@
 ::-webkit-scrollbar-thumb:hover {
   @apply bg-muted-foreground/50;
 }
+
+/* Kala saree loading screen */
+.kala-loader-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+}
+
+.kala-saree-loader-wrap {
+  width: 56px;
+  height: 72px;
+}
+
+.kala-saree-loader {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+@media (min-width: 640px) {
+  .kala-saree-loader-wrap {
+    width: 64px;
+    height: 82px;
+  }
+}
+
+@media (min-width: 768px) {
+  .kala-saree-loader-wrap {
+    width: 70px;
+    height: 90px;
+  }
+}
+
+.kala-saree-outline path {
+  stroke-dasharray: 260;
+  stroke-dashoffset: 260;
+  animation: kala-outline-draw 2.6s ease-in-out infinite;
+}
+
+.kala-saree-fill {
+  opacity: 0;
+  transform: translateY(5px);
+  transform-origin: center bottom;
+  animation: kala-saree-fill 2.6s ease-in-out infinite;
+}
+
+.kala-saree-inner-line path {
+  opacity: 0;
+  animation: kala-saree-inner-line 2.6s ease-in-out infinite;
+}
+
+@keyframes kala-outline-draw {
+  0% {
+    stroke-dashoffset: 260;
+    opacity: 1;
+  }
+  28% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  76% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 260;
+    opacity: 1;
+  }
+}
+
+@keyframes kala-saree-fill {
+  0%,
+  30% {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  44% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  72% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  92%,
+  100% {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+}
+
+@keyframes kala-saree-inner-line {
+  0%,
+  38% {
+    opacity: 0;
+  }
+  46%,
+  72% {
+    opacity: 1;
+  }
+  92%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kala-saree-outline path,
+  .kala-saree-fill,
+  .kala-saree-inner-line path {
+    animation: none !important;
+  }
+
+  .kala-saree-outline path {
+    stroke-dashoffset: 0;
+  }
+
+  .kala-saree-fill,
+  .kala-saree-inner-line path {
+    opacity: 1;
+    transform: none;
+  }
+}

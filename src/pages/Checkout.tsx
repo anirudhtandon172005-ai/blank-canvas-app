@@ -15,6 +15,7 @@ import { useAuthContext } from "@/contexts/AuthContext";
 import { getAddresses, addAddress } from "@/api/addresses";
 import { placeOrder } from "@/api/orders";
 import { toast } from "@/hooks/use-toast";
+import { getProfileCompletionStatus } from "@/api/profileCompletion";
 
 interface Address {
   id: string;
@@ -47,6 +48,8 @@ export default function Checkout() {
   const [loading, setLoading] = useState(true);
   const [placing, setPlacing] = useState(false);
   const [onlineOrderId, setOnlineOrderId] = useState<string | null>(null);
+  const [checkingProfileCompletion, setCheckingProfileCompletion] = useState(true);
+  const [isProfileComplete, setIsProfileComplete] = useState(false);
 
   const [newAddress, setNewAddress] = useState({
     full_name: "",
@@ -91,6 +94,51 @@ export default function Checkout() {
 
     fetchAddresses();
   }, [user, authLoading]);
+
+  useEffect(() => {
+    if (authLoading) return;
+
+    let isMounted = true;
+
+    async function checkProfileCompletion() {
+      try {
+        const status = await getProfileCompletionStatus();
+        if (!isMounted) return;
+
+        if (!status.isComplete) {
+          setIsProfileComplete(false);
+          toast({
+            title: "Complete your profile",
+            description: "Please complete your profile before checkout.",
+            variant: "destructive",
+          });
+          navigate("/profile?completeProfile=1", { replace: true });
+          return;
+        }
+
+        setIsProfileComplete(true);
+      } catch (error) {
+        if (!isMounted) return;
+        console.error("Failed to check profile completion on checkout:", error);
+        setIsProfileComplete(false);
+        toast({
+          title: "Unable to continue",
+          description: "Failed to check profile completion. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        if (isMounted) {
+          setCheckingProfileCompletion(false);
+        }
+      }
+    }
+
+    void checkProfileCompletion();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [authLoading, navigate, user?.id]);
 
   const handleAuthSuccess = () => {
     setShowAuthModal(false);
@@ -257,7 +305,7 @@ export default function Checkout() {
   };
 
   // Loading states
-  if (authLoading || cartLoading || loading) {
+  if (authLoading || cartLoading || loading || checkingProfileCompletion) {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
@@ -267,6 +315,10 @@ export default function Checkout() {
         <Footer />
       </div>
     );
+  }
+
+  if (!isProfileComplete) {
+    return null;
   }
 
   if (cartItems.length === 0) {

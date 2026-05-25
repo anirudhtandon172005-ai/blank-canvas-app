@@ -7,6 +7,8 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 import Loader from "@/components/Loader";
 import { useCart } from "@/hooks/useCart";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { toast } from "@/hooks/use-toast";
+import { getProfileCompletionStatus } from "@/api/profileCompletion";
 
 export default function Cart() {
   const navigate = useNavigate();
@@ -16,6 +18,30 @@ export default function Cart() {
   const shippingCost = cartTotal >= 2000 ? 0 : 99;
   const taxAmount = cartTotal * 0.05;
   const totalAmount = cartTotal + shippingCost + taxAmount;
+
+  const handleProceedToCheckout = async () => {
+    try {
+      const status = await getProfileCompletionStatus();
+      if (!status.isComplete) {
+        toast({
+          title: "Complete your profile",
+          description: "Please complete your profile before checkout.",
+          variant: "destructive",
+        });
+        navigate("/profile?completeProfile=1");
+        return;
+      }
+
+      navigate("/checkout");
+    } catch (error) {
+      console.error("Failed to check profile completion from cart:", error);
+      toast({
+        title: "Unable to continue",
+        description: "Failed to check profile completion. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   if (!user) {
     return (
@@ -186,7 +212,7 @@ export default function Cart() {
                 </div>
 
                 <button
-                  onClick={() => navigate("/checkout")}
+                  onClick={handleProceedToCheckout}
                   className="w-full mt-6 bg-primary text-primary-foreground py-3.5 rounded-full font-medium hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
                 >
                   Proceed to Checkout

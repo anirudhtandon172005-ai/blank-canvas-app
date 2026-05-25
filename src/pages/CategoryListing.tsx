@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ChevronDown, X, SlidersHorizontal } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import Navbar from "@/components/Navbar";
@@ -11,17 +11,6 @@ import ProductCard from "@/components/ProductCard";
 import Loader from "@/components/Loader";
 import { supabase } from "@/integrations/supabase/client";
 import { useResponsivePageSize } from "@/hooks/useResponsivePageSize";
-
-const COLORS = [
-  { name: "Red", value: "red" },
-  { name: "Black", value: "black" },
-  { name: "Gold", value: "gold" },
-  { name: "Green", value: "green" },
-  { name: "Blue", value: "blue" },
-  { name: "Purple", value: "purple" },
-];
-
-const OCCASIONS = ["Wedding", "Party", "Festive", "Casual"];
 
 const SORT_OPTIONS = [
   { label: "Popularity", value: "popularity" },
@@ -77,13 +66,6 @@ export default function CategoryListing() {
   const { categorySlug } = useParams();
   const queryClient = useQueryClient();
 
-  const [showFilters, setShowFilters] = useState(false);
-
-  // Filters
-  const [selectedColors, setSelectedColors] = useState<string[]>([]);
-  const [selectedOccasions, setSelectedOccasions] = useState<string[]>([]);
-  // IMPORTANT: default min price must not hide products (previously 2000 filtered out ₹1900 sarees)
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 50000]);
   const [sortBy, setSortBy] = useState<SortBy>("popularity");
   const [showSortDropdown, setShowSortDropdown] = useState(false);
 
@@ -181,17 +163,8 @@ export default function CategoryListing() {
 
   const totalCount = productsQuery.data?.pages?.[0]?.total ?? 0;
 
-  const filteredProducts = useMemo(() => {
-    return products.filter((product) => {
-      const price = product.sale_price || product.base_price;
-      if (price < priceRange[0] || price > priceRange[1]) return false;
-      // NOTE: color/occasion filters are placeholders in current UI; keep them non-blocking.
-      return true;
-    });
-  }, [products, priceRange]);
-
   const sortedProducts = useMemo(() => {
-    return [...filteredProducts].sort((a, b) => {
+    return [...products].sort((a, b) => {
       const priceA = a.sale_price || a.base_price;
       const priceB = b.sale_price || b.base_price;
 
@@ -206,28 +179,12 @@ export default function CategoryListing() {
           return 0;
       }
     });
-  }, [filteredProducts, sortBy]);
+  }, [products, sortBy]);
 
   const isLoading = categoryQuery.isLoading || productsQuery.isLoading;
   const isError = categoryQuery.isError || productsQuery.isError;
   const errorMessage =
     (categoryQuery.error as any)?.message || (productsQuery.error as any)?.message || "";
-
-  const toggleColor = (color: string) => {
-    setSelectedColors((prev) => (prev.includes(color) ? prev.filter((c) => c !== color) : [...prev, color]));
-  };
-
-  const toggleOccasion = (occasion: string) => {
-    setSelectedOccasions((prev) =>
-      prev.includes(occasion) ? prev.filter((o) => o !== occasion) : [...prev, occasion],
-    );
-  };
-
-  const clearFilters = () => {
-    setSelectedColors([]);
-    setSelectedOccasions([]);
-    setPriceRange([0, 50000]);
-  };
 
   const showEmpty = !isLoading && !isError && sortedProducts.length === 0;
 
@@ -250,109 +207,11 @@ export default function CategoryListing() {
             <p className="text-muted-foreground mt-2">{category.description}</p>
           </div>
 
-          <div className="flex gap-8">
-            {/* Filters Sidebar */}
-            <aside
-              className={`
-                fixed inset-0 z-50 bg-background lg:static lg:z-0 lg:bg-transparent
-                ${showFilters ? "block" : "hidden"} lg:block lg:w-64 lg:shrink-0
-              `}
-            >
-              <div className="h-full overflow-y-auto p-6 lg:p-0">
-                {/* Mobile Header */}
-                <div className="flex items-center justify-between mb-6 lg:hidden">
-                  <h2 className="font-heading text-xl font-semibold">Filters</h2>
-                  <button onClick={() => setShowFilters(false)}>
-                    <X className="w-6 h-6" />
-                  </button>
-                </div>
-
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="font-heading text-lg font-semibold">Filters</h2>
-                  <button onClick={clearFilters} className="text-sm text-primary hover:underline">
-                    Clear all
-                  </button>
-                </div>
-
-                {/* Price Range */}
-                <div className="mb-6">
-                  <h3 className="font-medium mb-3 flex items-center justify-between">
-                    Price Range
-                    <ChevronDown className="w-4 h-4" />
-                  </h3>
-                  <div className="space-y-3">
-                    <input
-                      type="range"
-                      min={0}
-                      max={50000}
-                      value={priceRange[1]}
-                      onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
-                      className="w-full accent-primary"
-                    />
-                    <div className="flex items-center justify-between text-sm text-muted-foreground">
-                      <span>₹{priceRange[0].toLocaleString()}</span>
-                      <span>₹{priceRange[1].toLocaleString()}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Color */}
-                <div className="mb-6">
-                  <h3 className="font-medium mb-3 flex items-center justify-between">
-                    Color
-                    <ChevronDown className="w-4 h-4" />
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {COLORS.map((color) => (
-                      <button
-                        key={color.value}
-                        onClick={() => toggleColor(color.value)}
-                        className={`w-8 h-8 rounded-full border-2 transition-all ${
-                          selectedColors.includes(color.value) ? "border-primary scale-110" : "border-transparent"
-                        }`}
-                        title={color.name}
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                {/* Occasion */}
-                <div className="mb-6">
-                  <h3 className="font-medium mb-3 flex items-center justify-between">
-                    Occasion
-                    <ChevronDown className="w-4 h-4" />
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {OCCASIONS.map((occasion) => (
-                      <button
-                        key={occasion}
-                        onClick={() => toggleOccasion(occasion)}
-                        className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
-                          selectedOccasions.includes(occasion)
-                            ? "bg-primary text-primary-foreground border-primary"
-                            : "border-border hover:border-primary"
-                        }`}
-                      >
-                        {occasion}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </aside>
-
-            {/* Products Grid */}
-            <div className="flex-1">
+          <div>
+            <div className="w-full">
               {/* Toolbar */}
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-4">
-                  <button
-                    onClick={() => setShowFilters(true)}
-                    className="flex items-center gap-2 lg:hidden px-3 py-2 border border-border rounded-lg"
-                  >
-                    <SlidersHorizontal className="w-4 h-4" />
-                    <span>Filters</span>
-                  </button>
+              <div className="flex items-center justify-between mb-6 gap-4">
+                <div className="flex items-center">
                   <span className="text-primary text-sm">Showing {sortedProducts.length} items</span>
                 </div>
 
@@ -404,7 +263,7 @@ export default function CategoryListing() {
                 </div>
               ) : (
                 <>
-                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {sortedProducts.map((product, index) => (
                       <ProductCard key={product.id} product={product} index={index} />
                     ))}

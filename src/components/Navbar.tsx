@@ -88,9 +88,9 @@ export default function Navbar() {
 
   return (
     <header className="sticky top-0 z-50 bg-background border-b">
-      <div className="container-main flex items-center justify-between h-16">
+      <div className="container-main px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16 gap-4">
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2">
+        <Link to="/" className="flex items-center gap-2 shrink-0">
           <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-bold">
             K
           </div>
@@ -98,7 +98,7 @@ export default function Navbar() {
         </Link>
 
         {/* Desktop Navigation - Dynamic Categories */}
-        <nav className="hidden lg:flex items-center gap-6">
+        <nav className="hidden lg:flex items-center gap-6 ml-8 xl:ml-10 shrink-0">
           <Link
             to="/category/all"
             className="text-sm font-medium hover:text-primary transition-colors"
@@ -126,7 +126,7 @@ export default function Navbar() {
         </nav>
 
         {/* Search */}
-        <div ref={ref} className="relative w-full max-w-md mx-6 hidden md:block">
+        <div ref={ref} className="relative w-full max-w-md mx-4 lg:mx-8 hidden md:block">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             value={searchQuery}

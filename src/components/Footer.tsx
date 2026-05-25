@@ -5,7 +5,7 @@ export default function Footer() {
   return (
     <footer className="bg-secondary/50 border-t border-border">
       <div className="container-main py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Brand */}
           <div className="space-y-4">
             <Link to="/" className="flex items-center gap-2">
@@ -52,21 +52,6 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Subscribe */}
-          <div>
-            <h4 className="font-heading font-semibold mb-4">Subscribe</h4>
-            <p className="text-sm text-muted-foreground mb-4">Get updates on new collections and offers.</p>
-            <div className="flex gap-2">
-              <input
-                type="email"
-                placeholder="Enter your email"
-                className="flex-1 px-4 py-2 rounded-lg bg-background border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-              />
-              <button className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors">
-                Subscribe
-              </button>
-            </div>
-          </div>
         </div>
 
         <div className="mt-12 pt-8 border-t border-border flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">

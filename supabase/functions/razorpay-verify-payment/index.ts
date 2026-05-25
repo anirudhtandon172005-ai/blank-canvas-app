@@ -64,24 +64,36 @@ async function reduceStockForOrder(supabase: ReturnType<typeof createClient>, or
   for (const [variantId, quantity] of quantitiesByVariant.entries()) {
     const { data: variant, error: variantError } = await supabase
       .from("product_variants")
-      .select("stock_quantity")
+      .select("stock_quantity,is_active")
       .eq("id", variantId)
       .single();
 
     if (variantError) throw variantError;
+    if (variant.is_active === false) {
+      throw new Error(`Out of stock for variant ${variantId}`);
+    }
 
     const stockQuantity = Number(variant.stock_quantity);
-    const nextQuantity = Math.max(0, stockQuantity - quantity);
+    if (stockQuantity < quantity) {
+      throw new Error(`Out of stock for variant ${variantId}`);
+    }
+    const nextQuantity = stockQuantity - quantity;
 
-    const { error: updateError } = await supabase
+    const { data: updatedVariant, error: updateError } = await supabase
       .from("product_variants")
       .update({
         stock_quantity: nextQuantity,
         updated_at: new Date().toISOString(),
       })
-      .eq("id", variantId);
+      .eq("id", variantId)
+      .gte("stock_quantity", quantity)
+      .select("id")
+      .maybeSingle();
 
     if (updateError) throw updateError;
+    if (!updatedVariant) {
+      throw new Error(`Out of stock for variant ${variantId}`);
+    }
   }
 }
 
@@ -200,7 +212,7 @@ serve(async (req) => {
       razorpay_signature,
     };
 
-    const { error: orderUpdateError } = await supabase
+    const { data: updatedOrder, error: orderUpdateError } = await supabase
       .from("orders")
       .update({
         status: "confirmed",
@@ -209,9 +221,31 @@ serve(async (req) => {
         razorpay_order_id,
         updated_at: now,
       })
-      .eq("id", order.id);
+      .eq("id", order.id)
+      .eq("payment_status", "pending")
+      .select("id,status,payment_status")
+      .maybeSingle();
 
     if (orderUpdateError) throw orderUpdateError;
+    if (!updatedOrder) {
+      const { data: latestOrder, error: latestOrderError } = await supabase
+        .from("orders")
+        .select("id,status,payment_status")
+        .eq("id", order.id)
+        .maybeSingle();
+
+      if (latestOrderError) throw latestOrderError;
+      if (latestOrder?.status === "confirmed" && latestOrder?.payment_status === "paid") {
+        return jsonResponse({
+          verified: true,
+          payment_id: razorpay_payment_id,
+          internal_order_id: order.id,
+          already_processed: true,
+        });
+      }
+
+      throw new Error("Order state changed unexpectedly");
+    }
 
     const { error: paymentError } = await supabase.from("payments").insert({
       order_id: order.id,

@@ -7,6 +7,8 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 import Loader from "@/components/Loader";
 import { useCart } from "@/hooks/useCart";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { toast } from "@/hooks/use-toast";
+import { validateCartItemStocks } from "@/api/cart";
 
 export default function Cart() {
   const navigate = useNavigate();
@@ -49,6 +51,42 @@ export default function Cart() {
   }
 
   const cartItems = cart?.items || [];
+  const cartStockIssues = cartItems.filter((item: any) => {
+    const stock = Number(item.variant?.is_active === false ? 0 : item.variant?.stock_quantity || 0);
+    return stock <= 0 || item.quantity > stock;
+  });
+  const hasStockIssues = cartStockIssues.length > 0;
+
+  const handleProceedToCheckout = async () => {
+    try {
+      const stockCheck = await validateCartItemStocks(
+        cartItems.map((item: any) => ({
+          id: item.id,
+          variant_id: item.variant_id,
+          quantity: item.quantity,
+          product_name: item.product?.name || "Item",
+        })),
+      );
+
+      if (!stockCheck.isValid) {
+        toast({
+          title: "Stock unavailable",
+          description: "Some items are out of stock or exceed available quantity.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      navigate("/checkout");
+    } catch (error) {
+      console.error("Failed to validate cart stock:", error);
+      toast({
+        title: "Unable to continue",
+        description: "Some items in your cart are out of stock or exceed available quantity.",
+        variant: "destructive",
+      });
+    }
+  };
 
   if (cartItems.length === 0) {
     return (
@@ -86,6 +124,7 @@ export default function Cart() {
                 const price = item.product?.sale_price || item.product?.base_price || 0;
                 const adjustment = item.variant?.price_adjustment || 0;
                 const itemPrice = price + adjustment;
+                const stock = Number(item.variant?.is_active === false ? 0 : item.variant?.stock_quantity || 0);
                 const primaryImage = item.product?.product_images?.find((img: any) => img.is_primary) || item.product?.product_images?.[0];
 
                 return (
@@ -94,7 +133,11 @@ export default function Cart() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.1 }}
-                    className="flex gap-4 p-4 border border-border rounded-xl"
+                    className={`flex gap-4 p-4 border rounded-xl ${
+                      stock <= 0 || item.quantity > stock
+                        ? "border-destructive/60 bg-destructive/5"
+                        : "border-border"
+                    }`}
                   >
                     <Link to={`/product/${item.product?.slug}`} className="shrink-0">
                       <div className="w-24 h-32 rounded-lg overflow-hidden bg-secondary/30">
@@ -127,15 +170,17 @@ export default function Cart() {
                       <div className="mt-auto flex items-center justify-between">
                         <div className="flex items-center gap-1 border border-border rounded-lg">
                           <button
+                            disabled={item.quantity <= 1}
                             onClick={() => updateItemQuantity(item.id, item.quantity - 1)}
-                            className="p-2 hover:bg-secondary transition-colors"
+                            className="p-2 hover:bg-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <Minus className="w-3 h-3" />
                           </button>
                           <span className="w-8 text-center text-sm">{item.quantity}</span>
                           <button
+                            disabled={stock <= 0 || item.quantity >= stock}
                             onClick={() => updateItemQuantity(item.id, item.quantity + 1)}
-                            className="p-2 hover:bg-secondary transition-colors"
+                            className="p-2 hover:bg-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <Plus className="w-3 h-3" />
                           </button>
@@ -144,6 +189,17 @@ export default function Cart() {
                           ₹{(itemPrice * item.quantity).toLocaleString()}
                         </p>
                       </div>
+                      {stock <= 0 ? (
+                        <p className="text-xs text-destructive mt-2">Out of stock</p>
+                      ) : item.quantity > stock ? (
+                        <p className="text-xs text-destructive mt-2">
+                          Quantity exceeds available stock. Only {stock} pieces left.
+                        </p>
+                      ) : (
+                        <p className="text-xs text-muted-foreground mt-2">
+                          {stock <= 5 ? `Only ${stock} pieces left` : `${stock} pieces left`}
+                        </p>
+                      )}
                     </div>
                   </motion.div>
                 );
@@ -186,12 +242,18 @@ export default function Cart() {
                 </div>
 
                 <button
-                  onClick={() => navigate("/checkout")}
-                  className="w-full mt-6 bg-primary text-primary-foreground py-3.5 rounded-full font-medium hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
+                  onClick={handleProceedToCheckout}
+                  disabled={hasStockIssues}
+                  className="w-full mt-6 bg-primary text-primary-foreground py-3.5 rounded-full font-medium hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Proceed to Checkout
                   <ArrowRight className="w-4 h-4" />
                 </button>
+                {hasStockIssues && (
+                  <p className="text-xs text-destructive mt-3">
+                    Some items in your cart are out of stock or exceed available quantity.
+                  </p>
+                )}
 
                 <Link
                   to="/category/all"

@@ -12,6 +12,7 @@ import AuthModal from "@/components/AuthModal";
 
 import { useCart } from "@/hooks/useCart";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { validateCartItemStocks } from "@/api/cart";
 import { getAddresses, addAddress } from "@/api/addresses";
 import { placeOrder } from "@/api/orders";
 import { toast } from "@/hooks/use-toast";
@@ -47,6 +48,7 @@ export default function Checkout() {
   const [loading, setLoading] = useState(true);
   const [placing, setPlacing] = useState(false);
   const [onlineOrderId, setOnlineOrderId] = useState<string | null>(null);
+  const [stockValidationError, setStockValidationError] = useState<string | null>(null);
 
   const [newAddress, setNewAddress] = useState({
     full_name: "",
@@ -97,13 +99,61 @@ export default function Checkout() {
   };
 
   const cartItems = cart?.items || [];
+  const cartStockIssues = cartItems.filter((item: any) => {
+    const stock = Number(item.variant?.is_active === false ? 0 : item.variant?.stock_quantity || 0);
+    return stock <= 0 || item.quantity > stock;
+  });
+  const hasStockIssues = cartStockIssues.length > 0;
   const shippingCost = cartTotal >= 2000 ? 0 : 99;
   const taxAmount = cartTotal * 0.05;
   const totalAmount = cartTotal + shippingCost + taxAmount;
 
   useEffect(() => {
+    if (!hasStockIssues) {
+      setStockValidationError(null);
+    }
+  }, [hasStockIssues]);
+
+  useEffect(() => {
     setOnlineOrderId(null);
   }, [selectedAddress?.id]);
+
+  const validateStockBeforeCheckout = async (): Promise<boolean> => {
+    try {
+      const result = await validateCartItemStocks(
+        cartItems.map((item: any) => ({
+          id: item.id,
+          variant_id: item.variant_id,
+          quantity: item.quantity,
+          product_name: item.product?.name || "Item",
+        })),
+      );
+
+      if (!result.isValid) {
+        const message = "Some items in your cart are out of stock or exceed available quantity.";
+        setStockValidationError(message);
+        toast({
+          title: "Stock unavailable",
+          description: message,
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      setStockValidationError(null);
+      return true;
+    } catch (error) {
+      console.error("Checkout stock validation failed:", error);
+      const message = "Some items in your cart are out of stock or exceed available quantity.";
+      setStockValidationError(message);
+      toast({
+        title: "Unable to validate stock",
+        description: message,
+        variant: "destructive",
+      });
+      return false;
+    }
+  };
 
   const handleAddAddress = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -167,6 +217,11 @@ export default function Checkout() {
     setPlacing(true);
 
     try {
+      const stockIsValid = await validateStockBeforeCheckout();
+      if (!stockIsValid) {
+        return;
+      }
+
       const order = await placeOrder(
         {
           addressId: selectedAddress.id,
@@ -200,11 +255,16 @@ export default function Checkout() {
   };
 
   const createPendingOnlineOrder = async () => {
-    if (onlineOrderId) return onlineOrderId;
-
     if (!selectedAddress) {
       throw new Error("Please select a delivery address");
     }
+
+    const stockIsValid = await validateStockBeforeCheckout();
+    if (!stockIsValid) {
+      throw new Error("Some items in your cart are out of stock or exceed available quantity.");
+    }
+
+    if (onlineOrderId) return onlineOrderId;
 
     const order = await placeOrder(
       {
@@ -464,8 +524,10 @@ export default function Checkout() {
                 <div className="space-y-3 mb-6 max-h-48 overflow-y-auto">
                   {cartItems.map((item) => {
                     const price = item.product?.sale_price || item.product?.base_price || 0;
+                    const stock = Number(item.variant?.is_active === false ? 0 : item.variant?.stock_quantity || 0);
+                    const hasIssue = stock <= 0 || item.quantity > stock;
                     return (
-                      <div key={item.id} className="flex gap-3">
+                      <div key={item.id} className={`flex gap-3 ${hasIssue ? "text-destructive" : ""}`}>
                         <div className="w-12 h-16 rounded bg-secondary/30 overflow-hidden shrink-0">
                           <img
                             src={item.product?.product_images?.find((img: ProductImage) => img.is_primary)?.image_url || item.product?.product_images?.[0]?.image_url || "/placeholder.svg"}
@@ -475,12 +537,22 @@ export default function Checkout() {
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium truncate">{item.product?.name}</p>
                           <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
+                          {stock <= 0 ? (
+                            <p className="text-xs text-destructive">Out of stock</p>
+                          ) : item.quantity > stock ? (
+                            <p className="text-xs text-destructive">Only {stock} pieces left</p>
+                          ) : null}
                         </div>
                         <p className="text-sm font-medium">₹{(price * item.quantity).toLocaleString()}</p>
                       </div>
                     );
                   })}
                 </div>
+                {(hasStockIssues || stockValidationError) && (
+                  <p className="text-xs text-destructive mb-4">
+                    {stockValidationError || "Some items in your cart are out of stock or exceed available quantity."}
+                  </p>
+                )}
 
                 <div className="space-y-3 text-sm border-t border-border pt-4">
                   <div className="flex justify-between">
@@ -510,7 +582,7 @@ export default function Checkout() {
                 {paymentMethod === "cod" ? (
                   <button
                     onClick={handleCODPayment}
-                    disabled={placing || !selectedAddress}
+                    disabled={placing || !selectedAddress || hasStockIssues}
                     className="w-full mt-6 bg-primary text-primary-foreground py-3.5 rounded-full font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                   >
                     {placing ? (
@@ -531,14 +603,13 @@ export default function Checkout() {
                     ) : (
                       <RazorpayButton
                         amount={totalAmount}
-                        internalOrderId={onlineOrderId ?? undefined}
                         onCreateInternalOrder={createPendingOnlineOrder}
                         customerName={selectedAddress?.full_name}
                         customerEmail={user?.email}
                         customerPhone={selectedAddress?.phone}
                         onSuccess={handleRazorpaySuccess}
                         onError={handleRazorpayError}
-                        disabled={!selectedAddress}
+                        disabled={!selectedAddress || hasStockIssues}
                       />
                     )}
                   </div>

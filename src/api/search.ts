@@ -17,6 +17,13 @@ export interface SearchResult {
   product_images: {
     image_url: string;
   }[];
+  product_variants: {
+    id: string;
+    stock_quantity: number;
+    is_active: boolean | null;
+    size: string;
+    color: string;
+  }[];
 }
 
 export async function searchProducts(query: string): Promise<SearchResult[]> {
@@ -41,6 +48,13 @@ export async function searchProducts(query: string): Promise<SearchResult[]> {
       ),
       product_images (
         image_url
+      ),
+      product_variants (
+        id,
+        stock_quantity,
+        is_active,
+        size,
+        color
       )
     `,
     )

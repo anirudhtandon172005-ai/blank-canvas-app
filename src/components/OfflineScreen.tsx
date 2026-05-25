@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { WifiOff } from "lucide-react";
+import BrandLogo from "./BrandLogo";
 
 interface OfflineScreenProps {
   onRetry: () => void;
@@ -111,7 +112,7 @@ export default function OfflineScreen({ onRetry }: OfflineScreenProps) {
             }}
           />
           
-          {/* Arched temple window */}
+          {/* Animated logo */}
           <motion.div
             className="relative w-32 h-32"
             animate={{
@@ -123,70 +124,21 @@ export default function OfflineScreen({ onRetry }: OfflineScreenProps) {
               ease: "easeInOut",
             }}
           >
-            <svg viewBox="0 0 100 100" className="w-full h-full">
-              <defs>
-                <linearGradient id="rubyGradientOffline" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#E85A7C" />
-                  <stop offset="30%" stopColor="#B8405E" />
-                  <stop offset="70%" stopColor="#9E2A4D" />
-                  <stop offset="100%" stopColor="#6B1A34" />
-                </linearGradient>
-                <filter id="rubyGlowOffline">
-                  <feGaussianBlur stdDeviation="1.5" result="coloredBlur" />
-                  <feMerge>
-                    <feMergeNode in="coloredBlur" />
-                    <feMergeNode in="SourceGraphic" />
-                  </feMerge>
-                </filter>
-              </defs>
-              
-              {/* Temple arch frame */}
-              <g filter="url(#rubyGlowOffline)">
-                {/* Outer arch */}
-                <path
-                  d="M18 92 L18 42 Q18 12 50 12 Q82 12 82 42 L82 92 Z"
-                  fill="none"
-                  stroke="url(#rubyGradientOffline)"
-                  strokeWidth="3"
-                />
-                {/* Inner arch */}
-                <path
-                  d="M28 88 L28 46 Q28 22 50 22 Q72 22 72 46 L72 88 Z"
-                  fill="none"
-                  stroke="url(#rubyGradientOffline)"
-                  strokeWidth="1.5"
-                  opacity="0.7"
-                />
-                {/* Decorative elements */}
-                <line x1="50" y1="22" x2="50" y2="88" stroke="url(#rubyGradientOffline)" strokeWidth="1" opacity="0.6" />
-                <line x1="28" y1="55" x2="72" y2="55" stroke="url(#rubyGradientOffline)" strokeWidth="1" opacity="0.6" />
-                {/* Top ornament */}
-                <circle cx="50" cy="8" r="4" fill="url(#rubyGradientOffline)" />
-              </g>
-            </svg>
+            <BrandLogo
+              className="h-full w-full"
+              imgClassName="rounded-xl bg-white/95 p-2 shadow-2xl"
+              alt="Kala Mandir"
+            />
             
             {/* Wifi off icon */}
-            <div className="absolute inset-0 flex items-center justify-center pt-6">
+            <div className="absolute inset-0 flex items-center justify-center">
               <WifiOff 
-                className="w-9 h-9"
-                style={{ color: "#DC6B86" }}
+                className="w-8 h-8 rounded-full bg-background/90 p-1"
+                style={{ color: "#9E2A4D" }}
                 strokeWidth={1.5}
               />
             </div>
           </motion.div>
-        </div>
-
-        {/* Brand name */}
-        <div>
-          <h1 
-            className="font-heading text-2xl font-semibold tracking-wider"
-            style={{ 
-              color: "#FFF0F3",
-              textShadow: "0 2px 15px rgba(180, 64, 94, 0.4)",
-            }}
-          >
-            Kala Mandir
-          </h1>
         </div>
 
         {/* Headline and message */}

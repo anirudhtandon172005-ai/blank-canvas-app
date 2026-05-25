@@ -11,6 +11,7 @@ import { searchProducts } from "@/api/search";
 import { supabase } from "@/integrations/supabase/client";
 import SearchSuggestions from "./SearchSuggestions";
 import ThemeToggle from "./ThemeToggle";
+import BrandLogo from "./BrandLogo";
 
 type Category = {
   id: string;
@@ -90,11 +91,12 @@ export default function Navbar() {
     <header className="sticky top-0 z-50 bg-background border-b">
       <div className="container-main px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16 gap-4">
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2 shrink-0">
-          <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-bold">
-            K
-          </div>
-          <span className="font-heading text-lg">KALA ETHNIC</span>
+        <Link to="/" className="shrink-0">
+          <BrandLogo
+            className="h-12 w-12"
+            imgClassName="rounded-md bg-white/95 p-1.5"
+            alt="Kala Mandir"
+          />
         </Link>
 
         {/* Desktop Navigation - Dynamic Categories */}

@@ -46,6 +46,7 @@ export default function SearchPage() {
       product.product_images?.map((img) => ({
         image_url: img.image_url,
       })) ?? [],
+    variants: product.product_variants || [],
     category: product.categories
       ? {
           id: product.categories.id,

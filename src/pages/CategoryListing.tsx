@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, useRef } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -74,11 +74,18 @@ export default function CategoryListing() {
   const prevBreakpointRef = useRef(breakpoint);
 
   const isAll = !categorySlug || categorySlug === "all";
+  const isNewArrivals = categorySlug === "new-arrivals";
+  const listingKey = isAll ? "all" : isNewArrivals ? "new-arrivals" : categorySlug ?? "all";
+  const sevenDaysAgoIso = useMemo(() => {
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    return sevenDaysAgo.toISOString();
+  }, []);
 
   // 1) Fetch category by slug FIRST (no join-based slug filtering)
   const categoryQuery = useQuery({
     queryKey: ["category", categorySlug],
-    enabled: !!categorySlug && !isAll,
+    enabled: !!categorySlug && !isAll && !isNewArrivals,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("categories")
@@ -98,14 +105,14 @@ export default function CategoryListing() {
     if (prevBreakpointRef.current !== breakpoint) {
       prevBreakpointRef.current = breakpoint;
       // Invalidate the products query to refetch with new page size
-      queryClient.resetQueries({ queryKey: ["category-products", isAll ? "all" : categoryId] });
+      queryClient.resetQueries({ queryKey: ["category-products", listingKey] });
     }
-  }, [breakpoint, queryClient, isAll, categoryId]);
+  }, [breakpoint, queryClient, listingKey]);
 
   // 2) Fetch products by category_id (or all products for /category/all), paginated, with count
   const productsQuery = useInfiniteQuery({
-    queryKey: ["category-products", isAll ? "all" : categoryId, pageSize],
-    enabled: isAll || !!categoryId,
+    queryKey: ["category-products", listingKey, categoryId, pageSize],
+    enabled: isAll || isNewArrivals || !!categoryId,
     initialPageParam: 0,
     queryFn: async ({ pageParam }) => {
       const from = Number(pageParam);
@@ -124,7 +131,9 @@ export default function CategoryListing() {
         .eq("is_active", true)
         .order("created_at", { ascending: false });
 
-      if (!isAll) {
+      if (isNewArrivals) {
+        query = query.gte("created_at", sevenDaysAgoIso);
+      } else if (!isAll) {
         query = query.eq("category_id", categoryId);
       }
 
@@ -149,12 +158,15 @@ export default function CategoryListing() {
     if (isAll) {
       return { name: "All Products", description: "Discover our complete collection" };
     }
+    if (isNewArrivals) {
+      return { name: "New Arrivals", description: "Fresh arrivals from the last 7 days" };
+    }
     return {
       name: categoryQuery.data?.name || "Products",
       description:
         categoryQuery.data?.description || "Discover timeless Indian craftsmanship tailored for elegance.",
     };
-  }, [categoryQuery.data, isAll]);
+  }, [categoryQuery.data, isAll, isNewArrivals]);
 
   const products = useMemo(() => {
     const pages = productsQuery.data?.pages ?? [];
@@ -259,7 +271,20 @@ export default function CategoryListing() {
                 </div>
               ) : showEmpty ? (
                 <div className="text-center py-16">
-                  <p className="text-muted-foreground">No products found in this category.</p>
+                  {isNewArrivals ? (
+                    <div className="space-y-3">
+                      <p className="text-muted-foreground">No new arrivals this week.</p>
+                      <p className="text-sm text-muted-foreground">Check back soon for fresh styles.</p>
+                      <Link
+                        to="/category/all"
+                        className="inline-flex items-center justify-center rounded-full bg-primary px-6 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+                      >
+                        View All Products
+                      </Link>
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground">No products found in this category.</p>
+                  )}
                 </div>
               ) : (
                 <>

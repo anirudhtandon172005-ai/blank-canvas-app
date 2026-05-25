@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import BrandLogo from "./BrandLogo";
 
 const loadingTexts = [
   "Curating Heritage...",
@@ -151,9 +152,9 @@ export default function LuxuryLoader({ progress, showProgress = true }: LuxuryLo
             }}
           />
           
-          {/* Temple/Lotus Emblem */}
+          {/* Animated logo */}
           <motion.div
-            className="relative w-28 h-28"
+            className="relative w-32 h-32"
             animate={{
               scale: [1, 1.03, 1],
             }}
@@ -163,63 +164,11 @@ export default function LuxuryLoader({ progress, showProgress = true }: LuxuryLo
               ease: "easeInOut",
             }}
           >
-            <svg viewBox="0 0 100 100" className="w-full h-full">
-              <defs>
-                <linearGradient id="rubyGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#E85A7C" />
-                  <stop offset="30%" stopColor="#B8405E" />
-                  <stop offset="50%" stopColor="#DC6B86" />
-                  <stop offset="70%" stopColor="#9E2A4D" />
-                  <stop offset="100%" stopColor="#6B1A34" />
-                </linearGradient>
-                <linearGradient id="rubyShine" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#FFB6C1" stopOpacity="0" />
-                  <stop offset="50%" stopColor="#FFB6C1" stopOpacity="0.6" />
-                  <stop offset="100%" stopColor="#FFB6C1" stopOpacity="0" />
-                </linearGradient>
-                <filter id="rubyGlow">
-                  <feGaussianBlur stdDeviation="2" result="coloredBlur" />
-                  <feMerge>
-                    <feMergeNode in="coloredBlur" />
-                    <feMergeNode in="SourceGraphic" />
-                  </feMerge>
-                </filter>
-              </defs>
-              
-              {/* Lotus/Temple geometry */}
-              <g filter="url(#rubyGlow)">
-                {/* Outer lotus petals */}
-                {[0, 45, 90, 135, 180, 225, 270, 315].map((angle, i) => (
-                  <ellipse
-                    key={i}
-                    cx="50"
-                    cy="28"
-                    rx="9"
-                    ry="22"
-                    fill="url(#rubyGradient)"
-                    opacity="0.9"
-                    transform={`rotate(${angle} 50 50)`}
-                  />
-                ))}
-                {/* Inner petals */}
-                {[22.5, 67.5, 112.5, 157.5, 202.5, 247.5, 292.5, 337.5].map((angle, i) => (
-                  <ellipse
-                    key={`inner-${i}`}
-                    cx="50"
-                    cy="35"
-                    rx="6"
-                    ry="14"
-                    fill="url(#rubyGradient)"
-                    opacity="0.7"
-                    transform={`rotate(${angle} 50 50)`}
-                  />
-                ))}
-                {/* Center jewel */}
-                <circle cx="50" cy="50" r="14" fill="url(#rubyGradient)" />
-                <circle cx="50" cy="50" r="8" fill="#DC6B86" opacity="0.8" />
-                <circle cx="47" cy="47" r="3" fill="#FFB6C1" opacity="0.5" />
-              </g>
-            </svg>
+            <BrandLogo
+              className="h-full w-full"
+              imgClassName="rounded-xl bg-white/95 p-2 shadow-2xl"
+              alt="Kala Mandir"
+            />
 
             {/* Ruby shimmer sweep */}
             <motion.div
@@ -239,25 +188,6 @@ export default function LuxuryLoader({ progress, showProgress = true }: LuxuryLo
               }}
             />
           </motion.div>
-        </div>
-
-        {/* Brand name */}
-        <div className="text-center">
-          <h1 
-            className="font-heading text-3xl md:text-4xl font-semibold tracking-wider"
-            style={{ 
-              color: "#FFF0F3",
-              textShadow: "0 2px 20px rgba(180, 64, 94, 0.5)",
-            }}
-          >
-            Kala Mandir
-          </h1>
-          <p 
-            className="mt-3 font-heading text-sm md:text-base italic tracking-widest"
-            style={{ color: "rgba(255, 220, 225, 0.8)" }}
-          >
-            Unveiling Timeless Elegance...
-          </p>
         </div>
 
         {/* Ruby red progress bar */}

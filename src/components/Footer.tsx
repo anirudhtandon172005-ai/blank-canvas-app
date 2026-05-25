@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Instagram, Facebook, Twitter } from "lucide-react";
+import BrandLogo from "./BrandLogo";
 
 export default function Footer() {
   return (
@@ -8,11 +9,12 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Brand */}
           <div className="space-y-4">
-            <Link to="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                <span className="text-primary-foreground text-sm font-bold">K</span>
-              </div>
-              <span className="font-heading text-xl font-semibold">KALA ETHNIC</span>
+            <Link to="/" className="inline-flex">
+              <BrandLogo
+                className="h-10 w-10"
+                imgClassName="rounded-md bg-white/95 p-1"
+                alt="Kala Mandir"
+              />
             </Link>
             <p className="text-sm text-muted-foreground">
               Celebrating the timeless beauty of Indian ethnic wear. Handcrafted with love and tradition.

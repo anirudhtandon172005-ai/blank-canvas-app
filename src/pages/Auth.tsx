@@ -6,6 +6,7 @@ import { Mail, Loader2, ArrowLeft, CheckCircle } from "lucide-react";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import BrandLogo from "@/components/BrandLogo";
 
 type Step = "email" | "otp" | "success";
 
@@ -117,11 +118,12 @@ export default function Auth() {
       {/* FORM */}
       <div className="w-full lg:w-1/2 flex items-center justify-center px-8">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-md w-full">
-          <Link to="/" className="flex items-center justify-center gap-2 mb-8">
-            <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-              <span className="text-primary-foreground font-bold">K</span>
-            </div>
-            <span className="text-2xl font-semibold">Kala Ethnic</span>
+          <Link to="/" className="flex items-center justify-center mb-8">
+            <BrandLogo
+              className="h-16 w-16"
+              imgClassName="rounded-lg bg-white/95 p-2"
+              alt="Kala Mandir"
+            />
           </Link>
 
           <AnimatePresence mode="wait">

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Heart, Minus, Plus, Truck, RefreshCw, ShieldCheck, ChevronDown, ChevronUp } from "lucide-react";
@@ -13,6 +13,28 @@ import { useCart } from "@/hooks/useCart";
 import { useWishlist } from "@/hooks/useWishlist";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+
+interface ProductVariant {
+  id: string;
+  color: string;
+  size: string;
+  stock_quantity: number;
+  is_active: boolean | null;
+}
+
+interface ProductDetailsData {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  base_price: number;
+  sale_price?: number | null;
+  is_featured?: boolean | null;
+  images: Array<{ image_url: string; alt_text?: string | null }>;
+  variants: ProductVariant[];
+  category?: { name?: string; slug?: string } | null;
+}
 
 export default function ProductDetails() {
   const { productSlug } = useParams();
@@ -21,7 +43,7 @@ export default function ProductDetails() {
   const { addItem } = useCart();
   const { isWishlisted, toggleItem } = useWishlist();
   
-  const [product, setProduct] = useState<any>(null);
+  const [product, setProduct] = useState<ProductDetailsData | null>(null);
   const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -38,14 +60,14 @@ export default function ProductDetails() {
       setLoading(true);
       try {
         const data = await getProductBySlug(productSlug);
-        setProduct(data);
+        const typedData = data as ProductDetailsData;
+        setProduct(typedData);
         
         // Set default selections
-        if (data?.variants?.length > 0) {
-          const uniqueColors = [...new Set(data.variants.map((v: any) => v.color))];
-          const uniqueSizes = [...new Set(data.variants.map((v: any) => v.size))];
-          if (uniqueColors.length > 0) setSelectedColor(uniqueColors[0] as string);
-          if (uniqueSizes.length > 0) setSelectedSize(uniqueSizes[0] as string);
+        const activeVariants = (typedData?.variants || []).filter((variant) => variant.is_active !== false);
+        if (activeVariants.length > 0) {
+          setSelectedColor(activeVariants[0].color);
+          setSelectedSize(activeVariants[0].size);
         }
 
         // Fetch related products
@@ -59,6 +81,97 @@ export default function ProductDetails() {
     }
     fetchProduct();
   }, [productSlug]);
+
+  const variants = product?.variants ?? [];
+  const images =
+    product?.images?.length && product.images.length > 0
+      ? product.images
+      : [{ image_url: "/placeholder.svg", alt_text: product?.name ?? "Product image" }];
+
+  const activeVariants = useMemo(
+    () => variants.filter((variant) => variant.is_active !== false),
+    [variants],
+  );
+  const uniqueColors = useMemo(
+    () => [...new Set(activeVariants.map((variant) => variant.color))],
+    [activeVariants],
+  );
+  const uniqueSizes = useMemo(
+    () => [...new Set(activeVariants.map((variant) => variant.size))],
+    [activeVariants],
+  );
+
+  const selectedVariant = activeVariants.find(
+    (variant) => variant.color === selectedColor && variant.size === selectedSize,
+  );
+  const selectedVariantStock = selectedVariant ? Number(selectedVariant.stock_quantity || 0) : 0;
+  const totalActiveStock = activeVariants.reduce(
+    (sum, variant) => sum + Number(variant.stock_quantity || 0),
+    0,
+  );
+  const isVariantOutOfStock = Boolean(selectedVariant) && selectedVariantStock <= 0;
+  const isProductOutOfStock = totalActiveStock <= 0;
+  const canPurchase = Boolean(selectedVariant) && !isVariantOutOfStock;
+
+  useEffect(() => {
+    if (activeVariants.length === 1 && !selectedVariant) {
+      setSelectedColor(activeVariants[0].color);
+      setSelectedSize(activeVariants[0].size);
+    }
+  }, [activeVariants, selectedVariant]);
+
+  useEffect(() => {
+    if (!selectedVariant) {
+      if (quantity !== 1) {
+        setQuantity(1);
+      }
+      return;
+    }
+
+    const maxQuantity = Math.max(1, selectedVariantStock);
+    if (quantity > maxQuantity) {
+      setQuantity(maxQuantity);
+    }
+  }, [selectedVariant, selectedVariantStock, quantity]);
+
+  useEffect(() => {
+    if (!selectedVariant?.id) return;
+
+    const channel = supabase
+      .channel(`product-variant-stock-${selectedVariant.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "product_variants",
+          filter: `id=eq.${selectedVariant.id}`,
+        },
+        (payload) => {
+          const updated = payload.new as { id: string; stock_quantity: number; is_active: boolean | null };
+          setProduct((prev) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              variants: prev.variants.map((variant) =>
+                variant.id === updated.id
+                  ? {
+                      ...variant,
+                      stock_quantity: Number(updated.stock_quantity || 0),
+                      is_active: updated.is_active,
+                    }
+                  : variant,
+              ),
+            };
+          });
+        },
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [selectedVariant?.id]);
 
   if (loading) {
     return (
@@ -84,23 +197,12 @@ export default function ProductDetails() {
     );
   }
 
-  const images = product.images?.length > 0 
-    ? product.images 
-    : [{ image_url: "/placeholder.svg", alt_text: product.name }];
-
-  const uniqueColors = [...new Set(product.variants?.map((v: any) => v.color) || [])];
-  const uniqueSizes = [...new Set(product.variants?.map((v: any) => v.size) || [])];
-
-  const selectedVariant = product.variants?.find(
-    (v: any) => v.color === selectedColor && v.size === selectedSize
-  );
-
   const currentPrice = product.sale_price || product.base_price;
   const discount = product.sale_price
     ? Math.round(((product.base_price - product.sale_price) / product.base_price) * 100)
     : 0;
 
-  const handleAddToCart = async () => {
+  const handleAddToCart = async (): Promise<boolean> => {
     if (!user) {
       toast({
         title: "Please login",
@@ -108,7 +210,7 @@ export default function ProductDetails() {
         variant: "destructive",
       });
       navigate("/login");
-      return;
+      return false;
     }
 
     if (!selectedVariant) {
@@ -117,15 +219,36 @@ export default function ProductDetails() {
         description: "Please select color and size",
         variant: "destructive",
       });
-      return;
+      return false;
+    }
+
+    if (selectedVariantStock <= 0 || selectedVariant.is_active === false) {
+      toast({
+        title: "Out of stock",
+        description: "This variant is currently out of stock.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    if (quantity > selectedVariantStock) {
+      toast({
+        title: "Quantity exceeds available stock",
+        description: `Only ${selectedVariantStock} pieces left`,
+        variant: "destructive",
+      });
+      return false;
     }
 
     await addItem(product.id, selectedVariant.id, quantity);
+    return true;
   };
 
   const handleBuyNow = async () => {
-    await handleAddToCart();
-    navigate("/cart");
+    const added = await handleAddToCart();
+    if (added) {
+      navigate("/cart");
+    }
   };
 
   const toggleAccordion = (id: string) => {
@@ -249,6 +372,32 @@ export default function ProductDetails() {
                 )}
               </div>
 
+              {selectedVariant ? (
+                <div className="mb-6">
+                  {isVariantOutOfStock ? (
+                    <p className="inline-flex items-center rounded-full bg-destructive px-3 py-1 text-xs font-semibold text-destructive-foreground">
+                      OUT OF STOCK
+                    </p>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      {selectedVariantStock <= 5
+                        ? `Only ${selectedVariantStock} pieces left`
+                        : `${selectedVariantStock} pieces left`}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div className="mb-6">
+                  {isProductOutOfStock ? (
+                    <p className="inline-flex items-center rounded-full bg-destructive px-3 py-1 text-xs font-semibold text-destructive-foreground">
+                      OUT OF STOCK
+                    </p>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Select a variant to check stock availability.</p>
+                  )}
+                </div>
+              )}
+
               {/* Color Selector */}
               {uniqueColors.length > 0 && (
                 <div className="mb-6">
@@ -312,14 +461,16 @@ export default function ProductDetails() {
                 <div className="flex items-center gap-1 border border-border rounded-lg w-fit">
                   <button
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="p-3 hover:bg-secondary transition-colors"
+                    disabled={quantity <= 1}
+                    className="p-3 hover:bg-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Minus className="w-4 h-4" />
                   </button>
                   <span className="w-12 text-center font-medium">{quantity}</span>
                   <button
                     onClick={() => setQuantity(quantity + 1)}
-                    className="p-3 hover:bg-secondary transition-colors"
+                    disabled={!selectedVariant || selectedVariantStock <= 0 || quantity >= selectedVariantStock}
+                    className="p-3 hover:bg-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Plus className="w-4 h-4" />
                   </button>
@@ -330,13 +481,15 @@ export default function ProductDetails() {
               <div className="flex gap-4 mb-8">
                 <button
                   onClick={handleAddToCart}
-                  className="flex-1 bg-primary text-primary-foreground py-3.5 rounded-full font-medium hover:bg-primary/90 transition-colors"
+                  disabled={!canPurchase}
+                  className="flex-1 bg-primary text-primary-foreground py-3.5 rounded-full font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Add to Cart
                 </button>
                 <button
                   onClick={handleBuyNow}
-                  className="flex-1 border border-primary text-primary py-3.5 rounded-full font-medium hover:bg-primary hover:text-primary-foreground transition-colors"
+                  disabled={!canPurchase}
+                  className="flex-1 border border-primary text-primary py-3.5 rounded-full font-medium hover:bg-primary hover:text-primary-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Buy Now
                 </button>

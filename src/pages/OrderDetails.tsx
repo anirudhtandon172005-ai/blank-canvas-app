@@ -75,8 +75,24 @@ export default function OrderDetails() {
   };
 
   const getProductImage = (item: any) => {
-    const primaryImage = item.product?.images?.find((img: any) => img.is_primary);
-    return primaryImage?.image_url || item.product?.images?.[0]?.image_url || "/placeholder.svg";
+    const rawImages = item?.product?.product_images ?? item?.product?.images ?? [];
+    const productImages = Array.isArray(rawImages) ? rawImages : [];
+    const validImages = productImages.filter(
+      (img: any) => typeof img?.image_url === "string" && img.image_url.trim().length > 0,
+    );
+
+    const variantImage = item?.variant_id
+      ? validImages.find((img: any) => img?.variant_id && img.variant_id === item.variant_id)
+      : undefined;
+    if (variantImage?.image_url) return variantImage.image_url;
+
+    const primaryImage = validImages.find((img: any) => img?.is_primary === true);
+    if (primaryImage?.image_url) return primaryImage.image_url;
+
+    const firstSortedImage = [...validImages].sort(
+      (a: any, b: any) => (a?.sort_order ?? Number.MAX_SAFE_INTEGER) - (b?.sort_order ?? Number.MAX_SAFE_INTEGER),
+    )[0];
+    return firstSortedImage?.image_url || "/placeholder.svg";
   };
 
   if (authLoading || loading) {

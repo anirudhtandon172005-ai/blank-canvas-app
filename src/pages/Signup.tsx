@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Eye, EyeOff } from "lucide-react";
 import { signup, loginWithGoogle } from "@/api/auth";
 import { toast } from "@/hooks/use-toast";
+import BrandLogo from "@/components/BrandLogo";
 
 export default function Signup() {
   const navigate = useNavigate();
@@ -66,11 +67,12 @@ export default function Signup() {
       {/* FORM SIDE */}
       <div className="w-full lg:w-1/2 flex flex-col justify-center px-8 md:px-16 lg:px-24 py-12 bg-background">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-md mx-auto w-full">
-          <Link to="/" className="flex items-center justify-center gap-2 mb-8">
-            <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-              <span className="text-primary-foreground font-bold">K</span>
-            </div>
-            <span className="font-heading text-2xl font-semibold text-foreground">Kala Ethnic</span>
+          <Link to="/" className="flex items-center justify-center mb-8">
+            <BrandLogo
+              className="h-16 w-16"
+              imgClassName="rounded-lg bg-white/95 p-2"
+              alt="Kala Mandir"
+            />
           </Link>
 
           <form onSubmit={handleSubmit} className="space-y-6">

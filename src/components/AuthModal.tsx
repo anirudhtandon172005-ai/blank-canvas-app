@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Mail, Loader2, ArrowLeft, CheckCircle } from "lucide-react";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
+import BrandLogo from "@/components/BrandLogo";
 import {
   InputOTP,
   InputOTPGroup,
@@ -142,10 +143,11 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                   <ArrowLeft className="w-5 h-5" />
                 </button>
               )}
-              <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-                <span className="text-primary-foreground font-bold">K</span>
-              </div>
-              <span className="font-heading text-xl font-semibold">Kala Ethnic</span>
+              <BrandLogo
+                className="h-10 w-10"
+                imgClassName="rounded-md bg-white/95 p-1"
+                alt="Kala Mandir"
+              />
             </div>
             <button
               onClick={handleClose}

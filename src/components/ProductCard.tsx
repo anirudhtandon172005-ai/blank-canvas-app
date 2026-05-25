@@ -12,6 +12,7 @@ interface ProductCardProps {
     sale_price?: number;
     is_featured?: boolean;
     images?: { image_url: string; is_primary?: boolean }[];
+    variants?: { stock_quantity?: number | null; is_active?: boolean | null }[];
   };
   index?: number;
 }
@@ -22,6 +23,12 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
 
   const primaryImage = product.images?.find((img) => img.is_primary) || product.images?.[0];
   const imageUrl = primaryImage?.image_url || "/placeholder.svg";
+  const activeVariants = (product.variants || []).filter((variant) => variant.is_active !== false);
+  const hasStockInfo = activeVariants.length > 0;
+  const totalStock = hasStockInfo
+    ? activeVariants.reduce((sum, variant) => sum + Number(variant.stock_quantity || 0), 0)
+    : null;
+  const isOutOfStock = totalStock !== null && totalStock <= 0;
 
   const discount = product.sale_price
     ? Math.round(((product.base_price - product.sale_price) / product.base_price) * 100)
@@ -32,7 +39,7 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
-      className="group"
+      className={`group ${isOutOfStock ? "opacity-70" : ""}`}
     >
       <div className="relative overflow-hidden rounded-lg bg-secondary/30 aspect-[3/4]">
         <Link to={`/product/${product.slug}`}>
@@ -42,6 +49,14 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
         </Link>
+
+        {isOutOfStock && (
+          <div className="absolute inset-0 bg-background/45 backdrop-blur-[1px] flex items-center justify-center">
+            <span className="px-3 py-1.5 rounded-full bg-destructive text-destructive-foreground text-xs font-semibold tracking-wide">
+              OUT OF STOCK
+            </span>
+          </div>
+        )}
 
         {/* Badges */}
         {product.is_featured && (
@@ -80,6 +95,15 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
             </span>
           )}
         </div>
+        {totalStock !== null && (
+          <p className={`text-xs ${isOutOfStock ? "text-destructive font-medium" : "text-muted-foreground"}`}>
+            {isOutOfStock
+              ? "Out of stock"
+              : totalStock <= 5
+                ? `Only ${totalStock} pieces left`
+                : `${totalStock} pieces left`}
+          </p>
+        )}
       </div>
     </motion.div>
   );

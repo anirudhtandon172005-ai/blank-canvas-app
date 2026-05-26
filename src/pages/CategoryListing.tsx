@@ -199,6 +199,13 @@ export default function CategoryListing() {
     (categoryQuery.error as any)?.message || (productsQuery.error as any)?.message || "";
 
   const showEmpty = !isLoading && !isError && sortedProducts.length === 0;
+  const toolbarStatusText = showEmpty
+    ? isNewArrivals
+      ? "Showing 0 items"
+      : isAll
+        ? "No products available right now."
+        : "Coming Soon"
+    : `Showing ${sortedProducts.length} items`;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -224,7 +231,7 @@ export default function CategoryListing() {
               {/* Toolbar */}
               <div className="flex items-center justify-between mb-6 gap-4">
                 <div className="flex items-center">
-                  <span className="text-primary text-sm">Showing {sortedProducts.length} items</span>
+                  <span className="text-primary text-sm">{toolbarStatusText}</span>
                 </div>
 
                 {/* Sort Dropdown */}
@@ -282,8 +289,18 @@ export default function CategoryListing() {
                         View All Products
                       </Link>
                     </div>
+                  ) : isAll ? (
+                    <div className="space-y-2">
+                      <h2 className="text-2xl font-heading font-semibold">No products available right now.</h2>
+                      <p className="text-sm text-muted-foreground">Please check back soon.</p>
+                    </div>
                   ) : (
-                    <p className="text-muted-foreground">No products found in this category.</p>
+                    <div className="space-y-2">
+                      <h2 className="text-2xl font-heading font-semibold">Coming Soon</h2>
+                      <p className="text-sm text-muted-foreground">
+                        We’re curating beautiful pieces for this collection. Please check back soon.
+                      </p>
+                    </div>
                   )}
                 </div>
               ) : (

@@ -20,6 +20,7 @@ import AdminReturns from "./pages/AdminReturns";
 import Returns from "./pages/Returns";
 import ReturnRequest from "./pages/ReturnRequest";
 import SearchPage from "./pages/SearchPage";
+import Contact from "./pages/Contact";
 import AddressList from "./pages/addresses/AddressList";
 import CreateAddress from "./pages/addresses/CreateAddress";
 import EditAddress from "./pages/addresses/EditAddress";
@@ -71,6 +72,7 @@ const App = () => (
             <Route path="/returns" element={<Returns />} />
             <Route path="/return-request/:orderId" element={<ReturnRequest />} />
             <Route path="/search" element={<SearchPage />} />
+            <Route path="/contact" element={<Contact />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

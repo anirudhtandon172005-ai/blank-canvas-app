@@ -196,6 +196,76 @@
   }
 }
 
+.kala-loader-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+}
+
+.kala-loader-figure {
+  position: relative;
+  height: clamp(205px, 22vw, 250px);
+  aspect-ratio: 1672 / 941;
+}
+
+.kala-loader-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  pointer-events: none;
+  user-select: none;
+}
+
+.kala-loader-outline {
+  opacity: 1;
+}
+
+.kala-loader-filled {
+  opacity: 0;
+  animation: kala-loader-fill-crossfade 2.7s ease-in-out infinite;
+}
+
+@keyframes kala-loader-fill-crossfade {
+  0% {
+    opacity: 0;
+  }
+  20% {
+    opacity: 0;
+  }
+  55% {
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .kala-loader-figure {
+    height: clamp(170px, 36vw, 220px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kala-loader-filled {
+    animation: none !important;
+    opacity: 1;
+  }
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;

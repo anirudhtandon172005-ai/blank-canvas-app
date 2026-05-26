@@ -572,8 +572,11 @@ export default function AdminReturns() {
           </DialogHeader>
 
           {detailsLoading || !selectedDetails ? (
-            <div className="py-10 flex justify-center">
-              <Loader />
+            <div className="py-10 flex items-center justify-center">
+              <div className="flex items-center gap-2 text-muted-foreground" role="status" aria-label="Loading return details">
+                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                <span className="sr-only">Loading details</span>
+              </div>
             </div>
           ) : (
             <div className="space-y-6">

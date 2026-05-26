@@ -50,6 +50,16 @@ interface GetAdminContactRequestsParams {
   limit?: number;
 }
 
+export interface ApprovalEmailResult {
+  sent: boolean;
+  error?: string;
+}
+
+export interface ApproveContactRequestResult {
+  request: AdminContactRequest;
+  email: ApprovalEmailResult;
+}
+
 async function getCurrentUser() {
   const {
     data: { user },
@@ -137,6 +147,30 @@ export async function getAdminContactRequestDetails(contactRequestId: string): P
   return fetchContactRequestForUpdate(contactRequestId);
 }
 
+export async function sendContactApprovalEmail(contactRequestId: string): Promise<ApprovalEmailResult> {
+  await requireAdmin();
+
+  const { data, error } = await supabase.functions.invoke("send-contact-approval-email", {
+    body: { contact_request_id: contactRequestId },
+  });
+
+  if (error) {
+    return {
+      sent: false,
+      error: error.message || "Failed to send approval email",
+    };
+  }
+
+  if (!data?.success) {
+    return {
+      sent: false,
+      error: data?.error || "Failed to send approval email",
+    };
+  }
+
+  return { sent: true };
+}
+
 export async function updateContactRequestAdminNote(contactRequestId: string, adminNote?: string) {
   await requireAdmin();
 
@@ -149,20 +183,29 @@ export async function updateContactRequestAdminNote(contactRequestId: string, ad
   });
 }
 
-export async function approveContactRequest(contactRequestId: string, adminNote?: string) {
+export async function approveContactRequest(
+  contactRequestId: string,
+  adminNote?: string,
+): Promise<ApproveContactRequestResult> {
   const user = await requireAdmin();
 
   const request = await fetchContactRequestForUpdate(contactRequestId);
   if (request.status !== "requested") throw new Error("Invalid status transition");
 
   const now = new Date().toISOString();
-  return updateContactRequest(contactRequestId, {
+  const updatedRequest = await updateContactRequest(contactRequestId, {
     status: "approved",
     approved_at: now,
     approved_by: user.id,
     admin_note: withExistingAdminNote(request.admin_note, adminNote),
     updated_at: now,
   });
+
+  const email = await sendContactApprovalEmail(contactRequestId);
+  return {
+    request: updatedRequest,
+    email,
+  };
 }
 
 export async function rejectContactRequest(contactRequestId: string, adminNote?: string) {

@@ -54,6 +54,7 @@ import {
   getAdminContactRequestDetails,
   getAdminContactRequests,
   rejectContactRequest,
+  sendContactApprovalEmail,
   updateContactRequestAdminNote,
 } from "@/api/adminContactRequests";
 
@@ -438,6 +439,59 @@ export default function AdminReturns() {
     }
   }
 
+  async function handleApproveContactRequest() {
+    if (!selectedContactDetails) return;
+
+    try {
+      setContactActionLoading(true);
+      const result = await approveContactRequest(selectedContactDetails.id, contactAdminNote || undefined);
+
+      if (result.email.sent) {
+        toast({ title: "Contact request approved" });
+      } else {
+        toast({
+          title: "Request approved, but email failed. You can retry.",
+          description: result.email.error || "Unable to send approval email.",
+          variant: "destructive",
+        });
+      }
+
+      await refreshContactsAfterAction();
+    } catch (error) {
+      toast({
+        title: "Failed to update contact request",
+        description: error instanceof Error ? error.message : "Please try again",
+        variant: "destructive",
+      });
+    } finally {
+      setContactActionLoading(false);
+    }
+  }
+
+  async function handleRetryContactApprovalEmail() {
+    if (!selectedContactDetails) return;
+
+    try {
+      setContactActionLoading(true);
+      const result = await sendContactApprovalEmail(selectedContactDetails.id);
+
+      if (!result.sent) {
+        throw new Error(result.error || "Failed to send approval email");
+      }
+
+      toast({ title: "Approval email sent" });
+      await refreshContactsAfterAction();
+    } catch (error) {
+      toast({
+        title: "Failed to send approval email",
+        description: error instanceof Error ? error.message : "Please try again",
+        variant: "destructive",
+      });
+    } finally {
+      setContactActionLoading(false);
+    }
+  }
+
   function renderMainAction() {
     if (!selectedDetails) return null;
     const request = selectedDetails.request;
@@ -552,12 +606,7 @@ export default function AdminReturns() {
         <div className="flex flex-wrap gap-2">
           <Button
             disabled={contactActionLoading}
-            onClick={() =>
-              runContactAction(
-                () => approveContactRequest(selectedContactDetails.id, contactAdminNote || undefined),
-                "Contact request approved",
-              )
-            }
+            onClick={handleApproveContactRequest}
           >
             {contactActionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
             Approve
@@ -581,18 +630,31 @@ export default function AdminReturns() {
 
     if (selectedContactDetails.status === "approved" || selectedContactDetails.status === "rejected") {
       return (
-        <Button
-          disabled={contactActionLoading}
-          onClick={() =>
-            runContactAction(
-              () => closeContactRequest(selectedContactDetails.id, contactAdminNote || undefined),
-              "Contact request closed",
-            )
-          }
-        >
-          {contactActionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-          Close
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            disabled={contactActionLoading}
+            onClick={() =>
+              runContactAction(
+                () => closeContactRequest(selectedContactDetails.id, contactAdminNote || undefined),
+                "Contact request closed",
+              )
+            }
+          >
+            {contactActionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+            Close
+          </Button>
+          {selectedContactDetails.status === "approved" &&
+          selectedContactDetails.approval_email_status === "failed" ? (
+            <Button
+              variant="outline"
+              disabled={contactActionLoading}
+              onClick={handleRetryContactApprovalEmail}
+            >
+              {contactActionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              Retry Email
+            </Button>
+          ) : null}
+        </div>
       );
     }
 
